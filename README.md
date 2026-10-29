@@ -20,8 +20,8 @@ Testing choices: Mockito for backend units; Spring Boot with Testcontainers for 
 - [Architecture](docs/architecture.md) — stack, module boundaries and verification strategy.
 - [Data model](docs/database.md) — revised entities and relationships.
 - [Wireframe](docs/ui/wireframe.png) — revised MVP screen overview; [design notes](docs/ui/wireframe.md).
-- [API contract](openapi.yaml) — earlier draft, awaiting reconciliation with the revised requirements.
+- [API contract](openapi.yaml) — revised endpoint and schema draft; detailed permissions and operational limits remain pending.
 
 ## Status
 
-The modeling/architecture documentation and UI wireframe reflect the revised MVP. The API contract still reflects the earlier scope and must be reconciled before implementation. Detailed schema, access, lifecycle and operational decisions remain open; see constraints.md. No application code, setup/test commands, migrations or deployment configuration exist yet. Implementation planning and verification evidence will be added when that work is authorized.
+The modeling/architecture documentation and UI wireframe reflect the revised MVP. The API contract now reflects the revised endpoint scope; detailed permissions and pending lifecycle semantics must be resolved before implementation. Detailed schema, access, lifecycle and operational decisions remain open; see constraints.md. No application code, setup/test commands, migrations or deployment configuration exist yet. Implementation planning and verification evidence will be added when that work is authorized.
