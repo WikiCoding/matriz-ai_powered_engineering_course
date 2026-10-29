@@ -1,0 +1,65 @@
+{
+  "realm": "matriz",
+  "enabled": true,
+  "displayName": "Matriz",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "ADMINISTRATOR", "description": "Matriz administrator" },
+      { "name": "PROJECT_MANAGER", "description": "Matriz project manager" },
+      { "name": "SOFTWARE_ENGINEER", "description": "Matriz software engineer" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "matriz-client",
+      "name": "Matriz web client",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@matriz.local",
+      "email": "admin@matriz.local",
+      "firstName": "Matriz",
+      "lastName": "Administrator",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "MatrizAdmin123!", "temporary": true }
+      ],
+      "realmRoles": ["ADMINISTRATOR"]
+    },
+    {
+      "username": "manager@matriz.local",
+      "email": "manager@matriz.local",
+      "firstName": "Matriz",
+      "lastName": "Project Manager",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "MatrizManager123!", "temporary": true }
+      ],
+      "realmRoles": ["PROJECT_MANAGER"]
+    },
+    {
+      "username": "engineer@matriz.local",
+      "email": "engineer@matriz.local",
+      "firstName": "Matriz",
+      "lastName": "Software Engineer",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "MatrizEngineer123!", "temporary": true }
+      ],
+      "realmRoles": ["SOFTWARE_ENGINEER"]
+    }
+  ]
+}

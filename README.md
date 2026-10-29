@@ -24,6 +24,52 @@ The backend has User, Team and Project Management modules in one deployable proc
 - [Wireframe](docs/ui/wireframe.png) — revised MVP screen overview; [design notes](docs/ui/wireframe.md).
 - [API contract](openapi.yaml) — revised endpoint and schema draft; role permissions and operational limits reflect approved decisions.
 
+## Running locally
+
+Docker Compose keeps the application services behind the `prod` profile. Supporting services can be started independently while developing infrastructure or application components.
+
+Start the supporting services:
+
+```text
+docker compose up
+```
+
+Start the complete local application, including the web client, gateway and backend:
+
+```text
+docker compose --profile prod up
+```
+
+Run the complete application in the background:
+
+```text
+docker compose --profile prod up -d
+```
+
+Rebuild application images before starting:
+
+```text
+docker compose --profile prod up --build
+```
+
+Stop the running services while preserving persistent volumes:
+
+```text
+docker compose --profile prod down
+```
+
+On first startup with a new Keycloak volume, the Compose setup imports the `matriz` realm, the `matriz-client` browser client, and one temporary-password user for each application role:
+
+| Role | Username | Initial password |
+| --- | --- | --- |
+| Administrator | `admin@matriz.local` | `MatrizAdmin123!` |
+| Project Manager | `manager@matriz.local` | `MatrizManager123!` |
+| Software Engineer | `engineer@matriz.local` | `MatrizEngineer123!` |
+
+The initial passwords require changing on first login. These credentials are for local development only and must not be reused elsewhere.
+
+Observability is preconfigured for Spring Boot 4.x Actuator/Micrometer applications. Prometheus scrapes the backend and gateway at `/actuator/prometheus`, and Grafana automatically provisions Prometheus and Loki datasources. Open Grafana at `http://localhost:3001` using the configured local Grafana credentials.
+
 ## Status
 
 Schema design and API contracts are approved with the customer revisions recorded in constraints.md. The text documentation and API reflect single optional assignment, UUID-only resource identifiers, physical deletion, server-local timestamps and Redis limiting. The PNG wireframe is an older illustration. Core business rules and technical completion are approved/delegated. Audit and operational logs are retained for one year; response time must be under two seconds at p95. Production is deferred. Local implementation can start; load-test conditions and future production SLA measurement remain acceptance details in the decision register. No application code or test/setup commands exist yet.
