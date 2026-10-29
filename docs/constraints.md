@@ -2,41 +2,50 @@
 
 ## Confirmed decisions
 
-The customer approved the expanded scope of Practical Assignment 03 on 2026-10-29. It supersedes conflicting initial requirements: multiple assignees replace one assignee, deletion replaces project archival as the required workflow, and project access is scoped rather than globally available. Example field rules adopted for this revision are stated in requirements.md.
+Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 
-- English application and documentation; approximately 500 users.
-- Java 21; Spring Boot with the latest stable Spring Modulith (2.1.2 verified on 2026-10-29); modular monolith with Clean Architecture inside backend modules.
-- Separate Spring Cloud Gateway Server WebFlux gateway; rate limiting on every endpoint by client IP.
-- Keycloak owns authentication, credentials, and roles; PostgreSQL stores application data.
-- Docker Compose runs the complete local environment. Deployment provider is undecided; AWS is a candidate, not a requirement.
-- Confirmed availability SLA: **99.95%**. Measurement details remain pending.
-- Mockito for backend unit tests. Selected integration approach: Spring Boot tests with Docker-backed Testcontainers.
-- React, React Router, local state and optional useContext; no Flux, useReducer, or Redux Toolkit. Reusable UI elements must be shared components. Custom CSS selected; Tailwind CSS remains an allowed alternative.
-- Jest selected for UI unit tests; Playwright for browser integration/end-to-end tests.
-- Spring validation and global backend exception handlers are allowed and included in the architecture.
-- This change is documentation only. No application, infrastructure, migrations, or API contract implementation is authorized in this task.
+- English application/documentation; approximately 500 users.
+- Java 21, Spring Boot/Spring Modulith modular monolith and Clean Architecture; separate Spring Cloud Gateway Server WebFlux.
+- Keycloak owns credentials and roles; PostgreSQL owns application data.
+- Docker Compose runs the full local environment, including Redis, Grafana, Loki and the selected Prometheus metrics store.
+- React, React Router, local state and optional useContext; no Flux, useReducer or Redux Toolkit. Custom CSS remains selected; Tailwind CSS and shadcn/ui are permitted alternatives. shadcn/ui may use Tailwind styling; permission to use it does not prohibit that dependency.
+- Mockito, Spring Boot/Testcontainers, Jest and Playwright are selected.
+- Availability target is 99.95%; production hosting is deferred. Response-time target is p95 under two seconds. Retain audit records and operational logs for one year; no organizational policy is currently defined.
+- D-01: existing schema design and API contracts are approved, subject to the explicit revisions below. The repository contains a logical model, not a detailed physical DDL specification. Completion of detailed module interfaces is now delegated.
+- D-02: Administrators create accounts and communicate temporary passwords in person; password change is mandatory at first login. Keycloak role mapping is in requirements.md. Sessions have an absolute maximum of eight hours, then require login again; access tokens need not last eight hours.
+- D-03: each user belongs to exactly one team; Administrators manage team lifecycle and membership.
+- D-04 (resolved): UUID resource IDs only for projects/tasks; no separate incremental identifiers or visible identifier fields.
+- D-05: zero or one assignee, who must be a Software Engineer in the project's team. Moving a user to another team automatically removes assignments in their old team as part of the move.
+- D-06 (resolved): physical cascade deletion. Project deletion removes its tasks and their comments/assignments; task deletion removes its comments/assignment. Preserve users and teams; leave no orphans.
+- D-07 (resolved): server timezone with 24-hour `dd/MM/yyyy HH:mm:ss`. Configure application instances consistently.
+- D-11: only Software Engineers create comments; Project Managers and Software Engineers read comments; Project Managers manage assignments. All Project Managers and Software Engineers can access all projects, regardless of ownership or team. Resource/role checks still apply.
+- D-12: one Redis token bucket per client IP shared across routes and instances; refill five tokens/second, capacity five, one token per request. This is an average rate with a small burst, not a strict rolling-window count. Trust forwarded IP headers only from explicitly configured proxies; ignore them otherwise. Quota exhaustion or limiter outage returns HTTP 429.
+- D-13 (resolved, delegated selection): Flyway with versioned PostgreSQL SQL migrations; see architecture.md.
+- This update authorizes documentation and contract revisions; no application implementation is included.
 
-## Decision register
+## Remaining decision register
 
-This is the authoritative pending-decision register. Confirmed choices above are not reopened by the remaining items. Proposed details below are not approval to implement them; block only affected work.
+Approvals of proposals 1–8 settle business behavior and delegate technical security/schema/interface completion. Do not reopen delegated implementation details as customer blockers. Production is now explicitly deferred, retention is one year and the response-time percentile is p95. No unresolved business-rule decision blocks starting local implementation.
 
-| ID   | Remaining decision                                                                                                                                                                                                             | Blocks                                                 |
-|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| D-01 | Approve detailed module interfaces, physical schema and revised public API contracts. Stack and modular-monolith style are confirmed.                                                                                          | Affected contracts/schema implementation.              |
-| D-02 | Define Keycloak account provisioning, application-role mapping, role-change permissions, identity/profile synchronization and email uniqueness. Keycloak is the role authority.                                                | Provisioning and detailed identity integration.        |
-| D-03 | Decide user-to-team cardinality and team lifecycle administration.                                                                                                                                                             | Membership and team administration.                    |
-| D-04 | Decide project/task identifier generation and format.                                                                                                                                                                          | Identifier creation and validation.                    |
-| D-05 | Define eligible assignees, whether they must be Software Engineers/on the project team, minimum assignee count, and behavior after membership changes.                                                                         | Assignment eligibility and updates.                    |
-| D-06 | Define logical versus physical deletion, dependent task/comment/assignment handling, retention and treatment of any archived records. Deletion is now required; archival is no longer its substitute.                          | Deletion persistence and lifecycle behavior.           |
-| D-07 | Define timestamp format and timezone.                                                                                                                                                                                          | Storage and API/display timestamp contracts.           |
-| D-08 | Define SLA measurement window, monitored scope, exclusions, and performance targets. The 99.95% value is confirmed.                                                                                                            | Availability acceptance and capacity design.           |
-| D-09 | Select deployment provider (AWS is optional), hosting, networking, backup/recovery and monitoring.                                                                                                                             | Production deployment.                                 |
-| D-10 | Define password/recovery/session/lockout, privacy, audit and regulatory policies.                                                                                                                                              | Related security behavior and release readiness.       |
-| D-11 | Define project sharing/access beyond its owner, administrator visibility, comment permissions and assignment-management permissions. Retain existing roles without assuming global project access.                             | Detailed authorization matrix and collaboration flows. |
-| D-12 | Define IP rate/burst quotas, global versus per-route buckets, trusted proxy handling, distributed limiter/store, outage policy and coverage of identity/operational endpoints. Redis is an option, not an approved dependency. | Limiter implementation and deployment topology.        |
+| ID | Remaining decision | Blocks |
+| --- | --- | --- |
+| D-08 | p95 response time must be under two seconds. Measurement boundary, concurrent load and dataset size still need a documented test scenario. SLA window, scope and exclusions are deferred with production. | Formal performance acceptance and future production SLA validation, not local feature implementation. |
+| D-09 (deferred) | Production deployment is deferred. Revisit provider/budget, backup policy and recovery targets when production is requested. Local Docker Compose and observability remain in scope. | Future production deployment only. |
+| D-10-R (resolved) | Retain approved audit events and operational logs for one year, then expire them. No organizational policy is currently defined. This retention does not delay physical deletion of project/task content or set backup/metrics retention. | No pending retention decision. |
 
-## Scope
+## Latest approvals and delegated implementation decisions
 
-The revised MVP includes authentication/session profile, project/task management and deletion, multiple assignees, comments, project-name search, task status/priority filters and a home panel with task counts. Backlogs, Kanban, general reports/analytics and external business integrations remain outside scope. Public registration and password recovery are optional assignment extensions, not approved MVP features.
+- D-01: the customer approved one Project Management module owning projects, tasks, assignments and comments on 2026-10-29, replacing the separate Project and Task boundaries. User and Team remain separate modules; the backend remains one deployable process. Keep distinct internal responsibilities and entities within Project Management. This changes internal organization only; existing API contracts, data ownership by the application/Keycloak, business rules and NFR targets remain unchanged. Module interfaces, remaining physical schema details and missing team/role API operations remain delegated. Use approved array responses without pagination. Reject duplicate/second assignments with HTTP 409; replace via explicit removal then addition.
+- D-02: Administrators assign exactly one role per account. Emails are unique case-insensitively. Keycloak owns identity/email; application owns team membership. No email/profile editing in MVP. Provisioning succeeds only when both identity and application records are ready; partial failures require retry/reconciliation without duplicate accounts.
+- D-03: delete only teams without users or projects; otherwise HTTP 409. Membership always has exactly one team.
+- D-05: remove invalid assignments when a role changes, a user/project changes teams, or a task moves projects. For application-owned changes, cleanup is part of the same transaction. Keycloak role changes require coordinated reconciliation and access invalidation.
+- D-10: technical security settings delegated; see architecture.md. Logout immediately invalidates API access for the logged-out session, across replicas; do not wait for JWT expiry.
+- D-11: Administrators manage users/teams/roles only and cannot access project/task content. Project Managers and Software Engineers read comments; only Software Engineers post them. Project owner records the creator; no transfer workflow.
+- D-12: concrete local topology delegated; public authentication, API and operational routes must not bypass the shared limiter. Deployment-specific trusted proxies are configuration, not a new business rule.
+- D-14: Spring Boot applications include Actuator, Micrometer and OTLP export. Compose includes Grafana and Loki. Prometheus is selected under delegated topology work as the OTLP metrics store; Loki stores logs and Grafana queries both. Exact compatible versions must be pinned and verified at implementation.
 
-The unchanged openapi.yaml predates this revision and must be reconciled before implementation. The [wireframe](ui/wireframe.png) now illustrates the revised scope; its illustrative controls do not resolve pending permissions or lifecycle policies.
+## Scope and evidence
+
+MVP: login/logout/profile, projects/tasks with physical deletion, zero-or-one Software Engineer assignee, comments, project-name search, task filters and home task counts; administrator user/team management. Backlogs, Kanban, general analytics, external integrations, public registration and password recovery remain outside scope.
+
+The approved API baseline in openapi.yaml has been revised to reflect these decisions. The PNG wireframe predates the single-assignee decision and is illustrative only; current textual design notes take precedence. No attachment was available for this update; role mapping uses the user instructions and existing Markdown requirements.

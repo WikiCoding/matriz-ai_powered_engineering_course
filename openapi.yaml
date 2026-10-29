@@ -1,87 +1,120 @@
 openapi: 3.1.0
 info:
   title: Matriz API
-  version: 0.2.0
-  description: Revised MVP contract. Detailed access, deletion, pagination and rate quotas remain pending in docs/constraints.md.
+  version: 0.5.0
+  description: Approved API baseline revised for customer decisions. Remaining details are in docs/constraints.md.
 servers:
   - url: https://api.matriz.example.com/v1
     description: Placeholder host; deployment is undecided.
 tags: [{name: Auth}, {name: Users}, {name: Teams}, {name: Projects}, {name: Tasks}, {name: Assignments}, {name: Comments}, {name: Dashboard}]
 paths:
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Immediately revoke current API session and terminate Keycloak session
+      operationId: logout
+      responses: {'204': {description: Application session revoked and identity logout completed}, '503': {description: Identity logout incomplete; locally revoked session remains blocked}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
+  /users/{userId}/role:
+    parameters: [{ $ref: '#/components/parameters/UserId' }]
+    put:
+      tags: [Users]
+      summary: Administrator assigns exactly one role and removes invalid assignments
+      operationId: replaceUserRole
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [role], properties: {role: {$ref: '#/components/schemas/Role'}}}}}}
+      responses: {'200': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Role change requires reconciliation; success not claimed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
+  /teams/{teamId}:
+    parameters: [{name: teamId, in: path, required: true, schema: {type: string, format: uuid}}]
+    patch:
+      tags: [Teams]
+      summary: Administrator renames a team
+      operationId: updateTeam
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamWrite'}}}}
+      responses: {'200': {$ref: '#/components/responses/Team'}, '400': {$ref: '#/components/responses/ValidationError'}, '404': {$ref: '#/components/responses/NotFound'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
+    delete:
+      tags: [Teams]
+      summary: Administrator deletes an empty team
+      operationId: deleteTeam
+      responses: {'204': {description: Empty team deleted}, '409': {$ref: '#/components/responses/Conflict'}, '404': {$ref: '#/components/responses/NotFound'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
   /me:
     get:
       tags: [Auth]
       summary: Get authenticated profile
       operationId: getCurrentUser
-      responses: {'200': {$ref: '#/components/responses/User'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/User'}, '401': {$ref: '#/components/responses/Unauthorized'}}
   /dashboard:
     get:
       tags: [Dashboard]
       summary: Accessible projects and task counts by status
       operationId: getDashboard
-      responses: {'200': {$ref: '#/components/responses/Dashboard'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Dashboard'}, '401': {$ref: '#/components/responses/Unauthorized'}}
   /users:
     get:
       tags: [Users]
       summary: List users
       operationId: listUsers
-      responses: {'200': {$ref: '#/components/responses/UserList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/UserList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     post:
       tags: [Users]
       summary: Provision a user through Keycloak
       operationId: createUser
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UserCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'409': {$ref: '#/components/responses/Conflict'}, '429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /users/{userId}/team-memberships:
     parameters: [{ $ref: '#/components/parameters/UserId' }]
     get:
       tags: [Users]
       summary: List team memberships
       operationId: listUserTeamMemberships
-      responses: {'200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     put:
       tags: [Users]
-      summary: Replace team memberships
+      summary: Replace the single team membership and atomically remove old-team assignments
       operationId: replaceUserTeamMemberships
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}
-      responses: {'200': {$ref: '#/components/responses/TeamList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TeamList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /teams:
+    post:
+      tags: [Teams]
+      summary: Administrator creates a team
+      operationId: createTeam
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamWrite'}}}}
+      responses: {'201': {$ref: '#/components/responses/Team'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
     get:
       tags: [Teams]
       summary: List accessible teams
       operationId: listTeams
-      responses: {'200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
   /projects:
     get:
       tags: [Projects]
       summary: List accessible projects, optionally searched by name
       operationId: listProjects
       parameters: [{ $ref: '#/components/parameters/Search' }]
-      responses: {'200': {$ref: '#/components/responses/ProjectList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/ProjectList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
     post:
       tags: [Projects]
       summary: Create project owned by authenticated user
       operationId: createProject
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProjectCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /projects/{projectId}:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
       tags: [Projects]
       summary: Get an accessible project
       operationId: getProject
-      responses: {'200': {$ref: '#/components/responses/Project'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Project'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     patch:
       tags: [Projects]
       summary: Update an accessible project
       operationId: updateProject
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProjectUpdate'}}}}
-      responses: {'200': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     delete:
       tags: [Projects]
       summary: Delete an accessible project
       operationId: deleteProject
-      responses: {'204': {description: Deleted; dependent-record behavior is pending D-06}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /projects/{projectId}/tasks:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
@@ -89,64 +122,64 @@ paths:
       summary: List project tasks with status and priority filters
       operationId: listProjectTasks
       parameters: [{ $ref: '#/components/parameters/StatusFilter' }, { $ref: '#/components/parameters/PriorityFilter' }]
-      responses: {'200': {$ref: '#/components/responses/TaskList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TaskList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     post:
       tags: [Tasks]
       summary: Create task in an accessible project
       operationId: createProjectTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /tasks/{taskId}:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Tasks]
       summary: Get an accessible task
       operationId: getTask
-      responses: {'200': {$ref: '#/components/responses/Task'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Task'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     patch:
       tags: [Tasks]
       summary: Update an accessible task
       operationId: updateTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskUpdate'}}}}
-      responses: {'200': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     delete:
       tags: [Tasks]
       summary: Delete an accessible task
       operationId: deleteTask
-      responses: {'204': {description: Deleted; dependent-record behavior is pending D-06}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /tasks/{taskId}/assignments:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Assignments]
       summary: List task assignees
       operationId: listTaskAssignments
-      responses: {'200': {$ref: '#/components/responses/AssignmentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/AssignmentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     post:
       tags: [Assignments]
-      summary: Add an eligible assignee
+      summary: Project Manager assigns one Software Engineer from the project team to an unassigned task
       operationId: addTaskAssignment
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AssignmentCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Assignment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'409': {$ref: '#/components/responses/Conflict'}, '429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Assignment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /tasks/{taskId}/assignments/{userId}:
     parameters: [{ $ref: '#/components/parameters/TaskId' }, { $ref: '#/components/parameters/UserId' }]
     delete:
       tags: [Assignments]
-      summary: Remove one task assignment
+      summary: Project Manager removes the task assignment
       operationId: removeTaskAssignment
-      responses: {'204': {description: Assignment removed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Assignment removed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /tasks/{taskId}/comments:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Comments]
-      summary: List task comments
+      summary: Project Managers and Software Engineers read task comments
       operationId: listTaskComments
-      responses: {'200': {$ref: '#/components/responses/CommentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/CommentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     post:
       tags: [Comments]
-      summary: Add comment as authenticated user
+      summary: Software Engineer adds comment as authenticated author
       operationId: addTaskComment
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CommentCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Comment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Comment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
 components:
   securitySchemes:
     keycloakOAuth:
@@ -173,33 +206,37 @@ components:
       properties: {id: {type: string, format: uuid}, email: {type: string, format: email}, displayName: {type: string}, role: {$ref: '#/components/schemas/Role'}}
     UserCreate:
       type: object
-      required: [email, role]
-      properties: {email: {type: string, format: email}, role: {$ref: '#/components/schemas/Role'}}
+      required: [email, role, teamId]
+      properties: {email: {type: string, format: email, description: Unique case-insensitively}, role: {$ref: '#/components/schemas/Role'}, teamId: {type: string, format: uuid}}
+    TeamWrite: {type: object, required: [name], properties: {name: {type: string, minLength: 1, pattern: '\\S'}}}
     Team: {type: object, required: [id, name], properties: {id: {type: string, format: uuid}, name: {type: string, minLength: 1}}}
-    TeamMembershipReplace: {type: object, required: [teamIds], properties: {teamIds: {type: array, items: {type: string, format: uuid}}}}
+    TeamMembershipReplace: {type: object, required: [teamIds], properties: {teamIds: {type: array, minItems: 1, maxItems: 1, items: {type: string, format: uuid}}}}
     ProjectCreate:
       type: object
-      required: [identifier, name, description, teamId]
-      properties: {identifier: {type: string}, name: {type: string, minLength: 3, maxLength: 100}, description: {type: string, maxLength: 1000}, teamId: {type: string, format: uuid}}
+      required: [name, description, teamId]
+      properties: {name: {type: string, minLength: 3, maxLength: 100}, description: {type: string, maxLength: 1000}, teamId: {type: string, format: uuid}}
     ProjectUpdate: {$ref: '#/components/schemas/ProjectCreate'}
     Project:
       allOf: [{$ref: '#/components/schemas/ProjectCreate'}, {type: object, required: [id, ownerId], properties: {id: {type: string, format: uuid}, ownerId: {type: string, format: uuid, readOnly: true}}}]
     TaskCreate:
       type: object
-      required: [identifier, title, description, effort]
-      properties: {identifier: {type: string}, title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}}
+      required: [title, description, effort]
+      properties: {title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}}
     TaskUpdate:
       type: object
-      properties: {identifier: {type: string}, title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}, projectId: {type: string, format: uuid}}
+      properties: {title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}, projectId: {type: string, format: uuid}}
     Task:
-      allOf: [{$ref: '#/components/schemas/TaskCreate'}, {type: object, required: [id, projectId, teamId, createdAt, updatedAt, assignees], properties: {id: {type: string, format: uuid}, projectId: {type: string, format: uuid}, teamId: {type: string, format: uuid, readOnly: true}, createdAt: {type: string, format: date-time, readOnly: true}, updatedAt: {type: string, format: date-time, readOnly: true}, assignees: {type: array, items: {$ref: '#/components/schemas/User'}}}}]
+      allOf: [{$ref: '#/components/schemas/TaskCreate'}, {type: object, required: [id, projectId, teamId, createdAt, updatedAt, assignees], properties: {id: {type: string, format: uuid}, projectId: {type: string, format: uuid}, teamId: {type: string, format: uuid, readOnly: true}, createdAt: {type: string, description: 'Server timezone; dd/MM/yyyy HH:mm:ss', readOnly: true}, updatedAt: {type: string, description: 'Server timezone; dd/MM/yyyy HH:mm:ss', readOnly: true}, assignees: {type: array, maxItems: 1, items: {$ref: '#/components/schemas/User'}}}}]
     AssignmentCreate: {type: object, required: [userId], properties: {userId: {type: string, format: uuid}}}
     Assignment: {type: object, required: [taskId, userId], properties: {taskId: {type: string, format: uuid}, userId: {type: string, format: uuid}}}
     CommentCreate: {type: object, required: [content], properties: {content: {type: string, minLength: 1, maxLength: 2000}}}
-    Comment: {allOf: [{$ref: '#/components/schemas/CommentCreate'}, {type: object, required: [id, taskId, authorId, createdAt], properties: {id: {type: string, format: uuid}, taskId: {type: string, format: uuid}, authorId: {type: string, format: uuid, readOnly: true}, createdAt: {type: string, format: date-time, readOnly: true}}}]}
+    Comment: {allOf: [{$ref: '#/components/schemas/CommentCreate'}, {type: object, required: [id, taskId, authorId, createdAt], properties: {id: {type: string, format: uuid}, taskId: {type: string, format: uuid}, authorId: {type: string, format: uuid, readOnly: true}, createdAt: {type: string, description: 'Server timezone; dd/MM/yyyy HH:mm:ss', readOnly: true}}}]}
     Dashboard: {type: object, required: [projects, taskCounts], properties: {projects: {type: array, items: {$ref: '#/components/schemas/Project'}}, taskCounts: {type: object, properties: {TODO: {type: integer, minimum: 0}, IN_PROGRESS: {type: integer, minimum: 0}, DONE: {type: integer, minimum: 0}}}}}
     Error: {type: object, required: [code, message], properties: {code: {type: string}, message: {type: string}}}
   responses:
+    Team: {description: Team, content: {application/json: {schema: {$ref: '#/components/schemas/Team'}}}}
+    Conflict: {description: Duplicate email or assignment, second assignee, or team still has users/projects, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    TooManyRequests: {description: IP quota exceeded or Redis limiter unavailable}
     User: {description: User, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
     UserList: {description: User list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/User'}}}}}
     TeamList: {description: Team list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Team'}}}}}
@@ -208,7 +245,7 @@ components:
     Task: {description: Task, content: {application/json: {schema: {$ref: '#/components/schemas/Task'}}}}
     TaskList: {description: Task list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Task'}}}}}
     Assignment: {description: Assignment, content: {application/json: {schema: {$ref: '#/components/schemas/Assignment'}}}}
-    AssignmentList: {description: Assignments, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Assignment'}}}}}
+    AssignmentList: {description: Zero or one Software Engineer assignment, content: {application/json: {schema: {type: array, maxItems: 1, items: {$ref: '#/components/schemas/Assignment'}}}}}
     Comment: {description: Comment, content: {application/json: {schema: {$ref: '#/components/schemas/Comment'}}}}
     CommentList: {description: Comments, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Comment'}}}}}
     Dashboard: {description: Dashboard, content: {application/json: {schema: {$ref: '#/components/schemas/Dashboard'}}}}
@@ -217,5 +254,10 @@ components:
     Forbidden: {description: Authenticated user lacks permission}
     NotFound: {description: Resource not found}
 security: [{keycloakOAuth: [openid, profile, email]}]
-x-rate-limiting: {required: true, key: client-ip, responseStatus: 429, detailsPending: D-12}
-x-keycloak: {realm: matriz, clientId: matriz-client, issuer: https://{keycloak-host}/realms/matriz}
+x-rate-limiting: {required: true, key: client-ip, requestsPerSecond: 5, algorithm: token-bucket, capacity: 5, tokensPerRequest: 1, bucketScope: all-routes-and-instances, forwardedHeaders: configured-trusted-proxies-only, store: Redis, responseStatus: 429, outageStatus: 429, topology: delegated-D-12}
+x-keycloak: {realm: matriz, clientId: matriz-client, issuer: "https://{keycloak-host}/realms/matriz"}
+
+x-session: {absoluteMaximumHours: 8, reauthenticationRequired: true, temporaryPasswordDelivery: in-person, firstLoginPasswordChange: required, idleTimeoutMinutes: 30, accessTokenMinutes: 5, logoutInvalidation: immediate-shared-session-revocation}
+x-project-access: {roles: [PROJECT_MANAGER, SOFTWARE_ENGINEER], scope: all-projects, administratorVisibility: denied}
+
+x-role-policy: {rolesPerUser: 1, roleChanges: ADMINISTRATOR, commentReaders: [PROJECT_MANAGER, SOFTWARE_ENGINEER], commentWriters: [SOFTWARE_ENGINEER], ownershipTransfer: disabled, profileEditing: disabled}
