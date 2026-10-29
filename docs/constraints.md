@@ -1,37 +1,42 @@
 # Constraints and pending decisions
 
-## Known constraints
+## Confirmed decisions
 
-- Application and documentation are in English.
-- The expected user population is approximately 500.
-- Docker and AWS are required technical contexts.
-- The initial product scope is a task list per project.
-- A project has one team; each task has one project and displays that project's team.
-- Records must not be permanently deleted; projects can be archived.
+The customer approved the expanded scope of Practical Assignment 03 on 2026-10-29. It supersedes conflicting initial requirements: multiple assignees replace one assignee, deletion replaces project archival as the required workflow, and project access is scoped rather than globally available. Example field rules adopted for this revision are stated in requirements.md.
 
-## Security and privacy requirements
-
-- Authentication uses email and password.
-- Authorization must enforce the Administrator, Project Manager, and Software Engineer permissions defined in the requirements.
-- No privacy, data-retention, password-policy, audit-log, or regulatory requirements have been supplied; these must be defined before release.
+- English application and documentation; approximately 500 users.
+- Java 21; Spring Boot with the latest stable Spring Modulith (2.1.2 verified on 2026-10-29); modular monolith with Clean Architecture inside backend modules.
+- Separate Spring Cloud Gateway Server WebFlux gateway; rate limiting on every endpoint by client IP.
+- Keycloak owns authentication, credentials, and roles; PostgreSQL stores application data.
+- Docker Compose runs the complete local environment. Deployment provider is undecided; AWS is a candidate, not a requirement.
+- Confirmed availability SLA: **99.95%**. Measurement details remain pending.
+- Mockito for backend unit tests. Selected integration approach: Spring Boot tests with Docker-backed Testcontainers.
+- React, React Router, local state and optional useContext; no Flux, useReducer, or Redux Toolkit. Reusable UI elements must be shared components. Custom CSS selected; Tailwind CSS remains an allowed alternative.
+- Jest selected for UI unit tests; Playwright for browser integration/end-to-end tests.
+- Spring validation and global backend exception handlers are allowed and included in the architecture.
+- This change is documentation only. No application, infrastructure, migrations, or API contract implementation is authorized in this task.
 
 ## Decision register
 
-This is the authoritative list of pending decisions. **Approved** means explicitly accepted; **proposed** means a draft option only; **pending** means unresolved. All items below are pending, including approval of proposed designs. Block only the affected work; do not infer approval from a diagram or API schema. Record the outcome here when a decision is approved and update affected documents.
+This is the authoritative pending-decision register. Confirmed choices above are not reopened by the remaining items. Proposed details below are not approval to implement them; block only affected work.
 
-| ID   | Decision required                                                                                                                                                              | Blocks                                                               |
-|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| D-01 | Approve or revise the modular monolith, module boundaries, application stack, relational engine, and draft API/data contracts.                                                 | Application scaffolding and affected contract/schema implementation. |
-| D-02 | Confirm identity provider (Keycloak proposed), credential provisioning, role authority/synchronization, and email uniqueness. OIDC and provider-managed passwords can coexist. | Login, user creation, role enforcement, and identity schema.         |
-| D-03 | Decide user-to-team cardinality and who manages the team lifecycle.                                                                                                            | Membership schema/updates and team administration.                   |
-| D-04 | Decide project/task identifier generation and format; identifiers must remain unique.                                                                                          | Identifier creation and validation.                                  |
-| D-05 | Decide whether assignees must belong to the project's team, including after project/team changes.                                                                              | Assignment and reassignment validation.                              |
-| D-06 | Define archived project visibility/editability and task behavior; decide whether tasks can be archived and by whom.                                                            | Archival workflows and related reads/updates.                        |
-| D-07 | Define timestamp format and timezone.                                                                                                                                          | Timestamp storage and API/display contracts.                         |
-| D-08 | Confirm or revise the proposed 99.95% SLA, measurement window/scope, and performance targets.                                                                                  | Availability design and performance acceptance checks.               |
-| D-09 | Select AWS services, identity hosting, network topology, backups/recovery, and monitoring.                                                                                     | Deployment design and production readiness.                          |
-| D-10 | Define password, recovery, session, lockout, privacy, retention, audit, and regulatory requirements.                                                                           | Relevant security behavior and release approval.                     |
+| ID   | Remaining decision                                                                                                                                                                                                             | Blocks                                                 |
+|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| D-01 | Approve detailed module interfaces, physical schema and revised public API contracts. Stack and modular-monolith style are confirmed.                                                                                          | Affected contracts/schema implementation.              |
+| D-02 | Define Keycloak account provisioning, application-role mapping, role-change permissions, identity/profile synchronization and email uniqueness. Keycloak is the role authority.                                                | Provisioning and detailed identity integration.        |
+| D-03 | Decide user-to-team cardinality and team lifecycle administration.                                                                                                                                                             | Membership and team administration.                    |
+| D-04 | Decide project/task identifier generation and format.                                                                                                                                                                          | Identifier creation and validation.                    |
+| D-05 | Define eligible assignees, whether they must be Software Engineers/on the project team, minimum assignee count, and behavior after membership changes.                                                                         | Assignment eligibility and updates.                    |
+| D-06 | Define logical versus physical deletion, dependent task/comment/assignment handling, retention and treatment of any archived records. Deletion is now required; archival is no longer its substitute.                          | Deletion persistence and lifecycle behavior.           |
+| D-07 | Define timestamp format and timezone.                                                                                                                                                                                          | Storage and API/display timestamp contracts.           |
+| D-08 | Define SLA measurement window, monitored scope, exclusions, and performance targets. The 99.95% value is confirmed.                                                                                                            | Availability acceptance and capacity design.           |
+| D-09 | Select deployment provider (AWS is optional), hosting, networking, backup/recovery and monitoring.                                                                                                                             | Production deployment.                                 |
+| D-10 | Define password/recovery/session/lockout, privacy, audit and regulatory policies.                                                                                                                                              | Related security behavior and release readiness.       |
+| D-11 | Define project sharing/access beyond its owner, administrator visibility, comment permissions and assignment-management permissions. Retain existing roles without assuming global project access.                             | Detailed authorization matrix and collaboration flows. |
+| D-12 | Define IP rate/burst quotas, global versus per-route buckets, trusted proxy handling, distributed limiter/store, outage policy and coverage of identity/operational endpoints. Redis is an option, not an approved dependency. | Limiter implementation and deployment topology.        |
 
-## Scope limitations
+## Scope
 
-No backlog, Kanban board, report, analytics feature, or external integration is included in the MVP. Architecture, data model, and API documents are proposals supporting that scope; implementation depends on the relevant decisions above.
+The revised MVP includes authentication/session profile, project/task management and deletion, multiple assignees, comments, project-name search, task status/priority filters and a home panel with task counts. Backlogs, Kanban, general reports/analytics and external business integrations remain outside scope. Public registration and password recovery are optional assignment extensions, not approved MVP features.
+
+The unchanged openapi.yaml predates this revision and must be reconciled before implementation. The [wireframe](ui/wireframe.png) now illustrates the revised scope; its illustrative controls do not resolve pending permissions or lifecycle policies.
