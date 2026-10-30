@@ -19,14 +19,13 @@ As an Administrator, I want to assign or move users between teams.
 1. Successful changes appear in the user's membership.
 2. Every user retains exactly one team; remove now-invalid assignments atomically. Reject deletion of teams with users/projects.
 
-## US-01.3 — Sign in, inspect my profile and sign out
+## US-01.3 — Sign in and sign out
 
 As a user, I want a complete authenticated session.
 
 1. A `POST /api/v1/auth/login` request to the API gateway forwards the user's email/password credentials to Keycloak's token endpoint using the password grant.
 2. Valid credentials return Keycloak access/refresh tokens; invalid credentials and unauthenticated API requests are rejected.
-3. Profile retrieval reflects the verified authenticated user.
-4. After logout succeeds, subsequent API requests from that session are rejected immediately on every replica, including replay of its access token. Expired sessions lead to login with an understandable message.
+3. After logout succeeds, subsequent API requests from that session are rejected immediately on every replica, including replay of its access token. Expired sessions lead to login with an understandable message.
 
 Verify both UI and direct API requests, including session and token replay after logout.
 
@@ -131,4 +130,4 @@ Verify Administrator-only role changes with exactly one role; no Administrator p
 
 Replay the logged-out session cookie and bearer token on each replica immediately after successful logout; both must fail. Cover in-flight requests separately: logout prevents subsequent authorization, but cannot undo a transaction already committed.
 
-Verify gateway/backend metrics and logs arrive in Grafana through their respective stores, no secrets/content leak to telemetry, and p95 latency is measurable against the under-two-second NFR. Test one-year audit/operational-log retention and expiration using controlled timestamps, independently of immediate content deletion. Load-test conditions remain D-08; production and its SLA acceptance are deferred.
+Verify gateway/backend metrics and logs arrive in Grafana through their respective stores, no secrets/content leak to telemetry, and p95 latency is measurable against the under-two-second NFR. No dedicated business-audit store or fixed operational-log retention test is required. Load-test conditions remain D-08; production and its SLA acceptance are deferred.

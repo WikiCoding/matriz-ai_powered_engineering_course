@@ -42,10 +42,20 @@ Tasks may be saved unassigned. Each user belongs to exactly one team. All Projec
 
 ## Superseded draft and migration considerations
 
-The former single `Task.assigneeId`, independent `User.role` and project `archived` field are not the revised target model. The old task status set is superseded. If existing data is later discovered, an explicit migration and status mapping (including former QA records) is needed; this task creates no migrations. The approved API retains assignment endpoints/arrays with a maximum of one assignee; the latest revisions are reflected in openapi.yaml.
+The former single `Task.assigneeId`, independent `User.role` and project `archived` field are not the revised target model. The old task status set is superseded. If existing data is later discovered, an explicit migration and status mapping (including former QA records) is needed; the initial migrations assume a new application database and do not transform a legacy schema. The approved API retains assignment endpoints/arrays with a maximum of one assignee; the latest revisions are reflected in openapi.yaml.
 
 ## Migrations
 
 Flyway manages application-owned PostgreSQL tables using versioned SQL migrations. UUID keys remain unchanged; no project/task number sequences are needed. Use database constraints for references and single-assignee uniqueness. Team/project/task moves and invalid-assignment cleanup must complete atomically. Role-change coordination spans Keycloak and the application; use retry/reconciliation and invalidate affected sessions. Keycloak owns its schema and migrations; application Flyway scripts must not modify it. See architecture.md for migration verification and conventions.
 
-Audit records retain actor/target references, action, time, outcome and correlation without content snapshots. They must survive project/task deletion and must not require foreign keys to deleted targets. Retain audit records for one year and expire them afterward (D-10-R resolved). This does not delay project/task cascade deletion. Identity provisioning requires an explicit pending/completed state and retry correlation; only completed profiles may use business APIs. These physical details are delegated; DDL will be delivered with Flyway implementation.
+Dedicated business audit records are out of scope following the revocation of NFR-11 on 2026-10-30. Identity provisioning still requires an explicit pending/completed state and retry correlation; only completed profiles may use business APIs. These physical details are delegated; DDL is provided by the versioned Flyway migrations in matriz-backend.
+
+## Implemented physical schema
+
+`V1__initial_schema.sql` creates `team`, `app_user`, `project`, `task`, `task_assignment` and `comment`. UUIDs are application-supplied. `app_user.team_id` is the physical membership link owned by Team workflows; Keycloak subjects and mirrored email remain User responsibilities. Email uniqueness uses a `lower(email)` index. Pending profiles reserve a unique provisioning correlation; completed profiles require a unique Keycloak subject. No passwords or authoritative roles are stored.
+
+Task assignment uses task ID as its primary key plus explicit pair uniqueness. Project/task deletion cascades to dependent content, while user/team references restrict deletion. Text checks, effort/status/priority checks and defaults enforce the approved data constraints. Timestamps use PostgreSQL `TIMESTAMP WITH TIME ZONE`. Foreign-key/query indexes support lookups, filters and cascades; substring project-name search remains a query implementation concern.
+
+Only `V1__initial_schema.sql` is required. The application does not use Spring Modulith's persistent JDBC event-publication registry, so no `event_publication` table is created. Dedicated audit storage is also omitted because NFR-11 was revoked.
+
+Role/team eligibility, atomic assignment cleanup, pending-profile access checks and provisioning reconciliation remain application work. Schema constraints alone do not implement those workflows. Migration tests use isolated PostgreSQL containers; startup applies migrations only to the configured application datasource.

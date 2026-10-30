@@ -9,7 +9,7 @@ The Matriz API Gateway is the reactive edge service for the Matriz application. 
 - Protects requests with OAuth2 Resource Server JWT validation through Keycloak.
 - Exchanges credentials for Keycloak tokens at public `POST /api/v1/auth/login` and its alias `POST /api/v1/login` using the password grant.
 - Lets an authenticated Administrator provision an identity and linked local profile at `POST /api/v1/auth/register`.
-- Allows CORS from all origins, methods and request headers across the gateway; browser credentials are not enabled.
+- Allows configurable CORS origins, methods and request headers across the gateway; the local defaults allow all three and browser credentials are not enabled.
 - Applies the Redis-backed `RequestRateLimiter` filter using a client-IP key resolver.
 - Exposes health and Prometheus Actuator endpoints.
 - Exports Micrometer metrics through Prometheus and optionally through OTLP.
@@ -54,6 +54,7 @@ Important settings include:
 - `BACKEND_BASE_URL`: backend address used to create the application-owned user profile and its required team membership after the Keycloak identity is ready.
 - `RATE_LIMIT_REPLENISH_RATE`: tokens added per second, default `5`.
 - `RATE_LIMIT_BURST_CAPACITY`: maximum bucket capacity, default `5`.
+- `CORS_ALLOWED_ORIGIN_PATTERNS`, `CORS_ALLOWED_METHODS` and `CORS_ALLOWED_HEADERS`: comma-separated CORS allowlists; each defaults to `*` for local development and should be restricted for production.
 
 Health, Prometheus and `POST /api/v1/auth/login` are public. Other application requests require a valid bearer token and an active Redis session registered by gateway login.
 

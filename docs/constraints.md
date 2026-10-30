@@ -10,7 +10,7 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 - Docker Compose runs the full local environment, including Redis, Grafana, Loki and the selected Prometheus metrics store.
 - React, React Router, local state and optional useContext; no Flux, useReducer or Redux Toolkit. Custom CSS remains selected; Tailwind CSS and shadcn/ui are permitted alternatives. shadcn/ui may use Tailwind styling; permission to use it does not prohibit that dependency.
 - Mockito, Spring Boot/Testcontainers, Jest and Playwright are selected.
-- Availability target is 99.95%; production hosting is deferred. Response-time target is p95 under two seconds. Retain audit records and operational logs for one year; no organizational policy is currently defined.
+- Availability target is 99.95%; production hosting is deferred. Response-time target is p95 under two seconds. Business audit records are out of scope, and no fixed operational-log retention period is required.
 - D-01: existing schema design and API contracts are approved, subject to the explicit revisions below. The repository contains a logical model, not a detailed physical DDL specification. Completion of detailed module interfaces is now delegated.
 - D-02: Administrators create accounts and communicate temporary passwords in person; password change is mandatory at first login. Keycloak role mapping is in requirements.md. Sessions have an absolute maximum of eight hours, then require login again; access tokens need not last eight hours.
 - D-03: each user belongs to exactly one team; Administrators manage team lifecycle and membership.
@@ -25,13 +25,13 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 
 ## Remaining decision register
 
-Approvals of proposals 1–8 settle business behavior and delegate technical security/schema/interface completion. Do not reopen delegated implementation details as customer blockers. Production is now explicitly deferred, retention is one year and the response-time percentile is p95. No unresolved business-rule decision blocks starting local implementation.
+Approvals of proposals 1–8 settle business behavior and delegate technical security/schema/interface completion. Do not reopen delegated implementation details as customer blockers. Production is now explicitly deferred, business audit storage and fixed log retention are out of scope, and the response-time percentile is p95. No unresolved business-rule decision blocks starting local implementation.
 
 | ID | Remaining decision | Blocks |
 | --- | --- | --- |
 | D-08 | p95 response time must be under two seconds. Measurement boundary, concurrent load and dataset size still need a documented test scenario. SLA window, scope and exclusions are deferred with production. | Formal performance acceptance and future production SLA validation, not local feature implementation. |
 | D-09 (deferred) | Production deployment is deferred. Revisit provider/budget, backup policy and recovery targets when production is requested. Local Docker Compose and observability remain in scope. | Future production deployment only. |
-| D-10-R (resolved) | Retain approved audit events and operational logs for one year, then expire them. No organizational policy is currently defined. This retention does not delay physical deletion of project/task content or set backup/metrics retention. | No pending retention decision. |
+| D-10-R (revoked 2026-10-30) | The customer revoked NFR-11. Do not store business audit records and do not impose a fixed operational-log retention period for the local MVP. Ordinary operational logging and observability remain in scope without a mandated retention duration. | No pending retention decision. |
 
 ## Latest approvals and delegated implementation decisions
 
