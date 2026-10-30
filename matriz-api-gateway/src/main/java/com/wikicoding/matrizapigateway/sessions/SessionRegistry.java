@@ -1,4 +1,4 @@
-package com.wikicoding.matrizapigateway.security;
+package com.wikicoding.matrizapigateway.sessions;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -15,13 +16,10 @@ import reactor.core.publisher.Mono;
 
 /** Missing state is denied, including after Redis data loss. Never cache authorization. */
 @Service
+@RequiredArgsConstructor
 public class SessionRegistry {
     private static final Duration MAX_SESSION = Duration.ofHours(8);
     private final ReactiveStringRedisTemplate redis;
-
-    public SessionRegistry(ReactiveStringRedisTemplate redis) {
-        this.redis = redis;
-    }
 
     public Mono<Void> register(Jwt jwt) {
         return Mono.defer(() -> {

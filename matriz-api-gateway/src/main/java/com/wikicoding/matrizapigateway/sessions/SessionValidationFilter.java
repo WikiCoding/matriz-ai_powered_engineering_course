@@ -1,6 +1,7 @@
-package com.wikicoding.matrizapigateway.security;
+package com.wikicoding.matrizapigateway.sessions;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -13,12 +14,9 @@ import org.springframework.web.server.WebFilterChain;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
+@RequiredArgsConstructor
 public class SessionValidationFilter implements WebFilter {
     private final SessionRegistry sessions;
-
-    public SessionValidationFilter(SessionRegistry sessions) {
-        this.sessions = sessions;
-    }
 
     @Override
     public Mono<Void> filter(@NotNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {

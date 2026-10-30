@@ -1,7 +1,7 @@
 package com.wikicoding.matrizapigateway.configs;
 
 import com.wikicoding.matrizapigateway.controllers.AuthenticationController;
-import com.wikicoding.matrizapigateway.security.SessionRegistry;
+import com.wikicoding.matrizapigateway.sessions.SessionRegistry;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import java.time.Duration;
@@ -25,6 +25,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,18 +35,36 @@ import org.springframework.web.reactive.config.EnableWebFlux;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringJUnitConfig(classes = {SecurityConfiguration.class, LoginSecurityTests.TestConfiguration.class})
+@TestPropertySource(properties = {
+        "cors.allowed-origin-patterns=https://app.example.com",
+        "cors.allowed-methods=GET,POST",
+        "cors.allowed-headers=Authorization,Content-Type"
+})
 class LoginSecurityTests {
     @Autowired ApplicationContext context;
     @Autowired TestState state;
     @Autowired SessionRegistry sessions;
     @Autowired ReactiveStringRedisTemplate redis;
     WebTestClient client;
+
+    @Test
+    void corsConfigurationUsesConfiguredValues() {
+        var source = context.getBean(CorsConfigurationSource.class);
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/me"));
+        var cors = source.getCorsConfiguration(exchange);
+        assertNotNull(cors);
+
+        assertEquals(List.of("https://app.example.com"), cors.getAllowedOriginPatterns());
+        assertEquals(List.of("GET", "POST"), cors.getAllowedMethods());
+        assertEquals(List.of("Authorization", "Content-Type"), cors.getAllowedHeaders());
+    }
 
     @BeforeEach
     void resetState() {

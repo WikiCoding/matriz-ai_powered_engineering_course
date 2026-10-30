@@ -1,6 +1,6 @@
 package com.wikicoding.matrizapigateway.controllers;
 
-import com.wikicoding.matrizapigateway.security.SessionRegistry;
+import com.wikicoding.matrizapigateway.sessions.SessionRegistry;
 import com.nimbusds.jwt.JWTParser;
 import java.text.ParseException;
 import java.time.Duration;

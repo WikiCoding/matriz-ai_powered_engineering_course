@@ -1,7 +1,8 @@
 package com.wikicoding.matrizapigateway.configs;
 
-import com.wikicoding.matrizapigateway.security.SessionRegistry;
-import com.wikicoding.matrizapigateway.security.SessionValidationFilter;
+import com.wikicoding.matrizapigateway.sessions.SessionRegistry;
+import com.wikicoding.matrizapigateway.sessions.SessionValidationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +18,6 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -25,11 +25,14 @@ import java.util.List;
 class SecurityConfiguration {
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
+    CorsConfigurationSource corsConfigurationSource(
+            @Value("#{'${cors.allowed-origin-patterns}'.split(',')}") List<String> allowedOriginPatterns,
+            @Value("#{'${cors.allowed-methods}'.split(',')}") List<String> allowedMethods,
+            @Value("#{'${cors.allowed-headers}'.split(',')}") List<String> allowedHeaders) {
         var configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of(Arrays.toString(HttpMethod.values())));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOriginPatterns(allowedOriginPatterns);
+        configuration.setAllowedMethods(allowedMethods);
+        configuration.setAllowedHeaders(allowedHeaders);
         configuration.setExposedHeaders(List.of(HttpHeaders.LOCATION));
         configuration.setMaxAge(3600L);
         configuration.setAllowCredentials(false);
