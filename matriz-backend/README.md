@@ -10,7 +10,7 @@ The backend uses Spring Data JPA. `application.properties` uses `DB_URL` for the
 
 Standard Spring overrides `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` also work. For a backend running inside Compose, set `DB_URL=jdbc:postgresql://app-db:5432/matriz`. A Compose `.env` file does not automatically populate an IDE or terminal process environment; configure those variables separately.
 
-Flyway runs automatically at backend startup using the Spring Data JPA datasource. V1 creates teams, application profiles/provisioning state, projects, tasks, assignments and comments. The backend does not use Spring Modulith's persistent event-publication registry or dedicated audit storage. SQL script initialization is disabled. Flyway validates checksums, disables clean, and does not automatically baseline an existing unmanaged database. Add a new versioned migration for future changes; never edit an applied script. No seed data or Keycloak tables are included.
+Flyway runs automatically at backend startup using the Spring Data JPA datasource. V1 creates teams, application profiles/provisioning state, projects, tasks (including the optimistic-lock version column used by JPA `@Version`), assignments and comments. The backend does not use Spring Modulith's persistent event-publication registry or dedicated audit storage. SQL script initialization is disabled. Flyway validates checksums, disables clean, and does not automatically baseline an existing unmanaged database. Add a new versioned migration for future changes; never edit an applied script. No seed data or Keycloak tables are included.
 
 ## Verification
 

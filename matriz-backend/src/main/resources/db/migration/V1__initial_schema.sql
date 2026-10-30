@@ -38,7 +38,8 @@ CREATE TABLE task (
     status TEXT NOT NULL DEFAULT 'TODO' CHECK (status IN ('TODO', 'IN_PROGRESS', 'DONE')),
     priority TEXT NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH')),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0
 );
 CREATE INDEX task_project_status_priority_idx ON task (project_id, status, priority);
 CREATE INDEX task_status_priority_idx ON task (status, priority);

@@ -11,7 +11,7 @@ The Project Management module owns Project, Task, TaskAssignment and Comment. Us
 | User | id, keycloakSubject, email, teamId | Local profile/reference; email is unique case-insensitively and mirrored from Keycloak. No email/profile editing in MVP. No password or authoritative role column. |
 | Team | id, name | Exactly one team per user; administered by Administrators. Reject deletion while users or projects reference the team. |
 | Project | id, name, description, teamId, ownerId | Exactly one team and authenticated creator as owner. All Project Managers and Software Engineers can access it; owner records the creator; no transfer workflow. |
-| Task | id, title, description, effort, status, priority, createdAt, updatedAt, projectId | Team derived from project. Single assigneeId removed. |
+| Task | id, title, description, effort, status, priority, createdAt, updatedAt, projectId, version | Team derived from project. Single assigneeId removed. `version` supports optimistic concurrency control. |
 | TaskAssignment | taskId, userId | Unique taskId and unique task/user pair; zero or one Software Engineer per task. Assignee must belong to the project's team; user-team moves remove old-team assignments. |
 | Comment | id, taskId, authorId, content, createdAt | Author and timestamp supplied by backend; no edit/delete workflow assumed. |
 
@@ -33,6 +33,7 @@ Tasks may be saved unassigned. Each user belongs to exactly one team. All Projec
 
 - UUID project/task resource IDs only, with no separate incremental business identifiers. Identity-subject links must identify a single local user; unique Keycloak subject maps to exactly one local profile.
 - TaskAssignment uses a unique constraint on `taskId` in addition to uniqueness of `(taskId, userId)` to prevent duplicate assignments, including concurrent requests. Assignment removal is distinct from user deletion.
+- Task persistence uses JPA `@Version` with a non-null database version column so concurrent updates cannot silently overwrite a newer task state.
 - All references must resolve to existing records. Comments and assignments inherit task/project authorization; adding an assignment alone does not define access rights.
 - Project name 3–100 characters, description at most 1000; task title 3–150, description at most 2000; comment content 1–2000. Reject whitespace-only required names, titles and comment content. Descriptions are required by the approved create contract; empty descriptions are permitted.
 - Task effort: `1, 2, 3, 5, 8, 13`; status: `TODO`, `IN_PROGRESS`, `DONE`, default `TODO`; priority: `LOW`, `MEDIUM`, `HIGH`, default `MEDIUM`.
@@ -52,7 +53,7 @@ Dedicated business audit records are out of scope following the revocation of NF
 
 ## Implemented physical schema
 
-`V1__initial_schema.sql` creates `team`, `app_user`, `project`, `task`, `task_assignment` and `comment`. UUIDs are application-supplied. `app_user.team_id` is the physical membership link owned by Team workflows; Keycloak subjects and mirrored email remain User responsibilities. Email uniqueness uses a `lower(email)` index. Pending profiles reserve a unique provisioning correlation; completed profiles require a unique Keycloak subject. No passwords or authoritative roles are stored.
+`V1__initial_schema.sql` creates `team`, `app_user`, `project`, `task`, `task_assignment` and `comment`. The Task table includes a non-null version column for JPA optimistic concurrency control. UUIDs are application-supplied. `app_user.team_id` is the physical membership link owned by Team workflows; Keycloak subjects and mirrored email remain User responsibilities. Email uniqueness uses a `lower(email)` index. Pending profiles reserve a unique provisioning correlation; completed profiles require a unique Keycloak subject. No passwords or authoritative roles are stored.
 
 Task assignment uses task ID as its primary key plus explicit pair uniqueness. Project/task deletion cascades to dependent content, while user/team references restrict deletion. Text checks, effort/status/priority checks and defaults enforce the approved data constraints. Timestamps use PostgreSQL `TIMESTAMP WITH TIME ZONE`. Foreign-key/query indexes support lookups, filters and cascades; substring project-name search remains a query implementation concern.
 
