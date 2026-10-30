@@ -46,7 +46,7 @@ The former single `Task.assigneeId`, independent `User.role` and project `archiv
 
 ## Migrations
 
-Flyway manages application-owned PostgreSQL tables using versioned SQL migrations. UUID keys remain unchanged; no project/task number sequences are needed. Use database constraints for references and single-assignee uniqueness. Team/project/task moves and invalid-assignment cleanup must complete atomically. Role-change coordination spans Keycloak and the application; use retry/reconciliation and invalidate affected sessions. Keycloak owns its schema and migrations; application Flyway scripts must not modify it. See architecture.md for migration verification and conventions.
+Spring Data JPA persists application-owned entities in PostgreSQL, while Flyway manages its tables with versioned SQL migrations. UUID keys remain unchanged; no project/task number sequences are needed. Use database constraints for references and single-assignee uniqueness. Team/project/task moves and invalid-assignment cleanup must complete atomically. Role-change coordination spans Keycloak and the application; use retry/reconciliation and invalidate affected sessions. Keycloak owns its schema and migrations; application Flyway scripts must not modify it. See architecture.md for migration verification and conventions.
 
 Dedicated business audit records are out of scope following the revocation of NFR-11 on 2026-10-30. Identity provisioning still requires an explicit pending/completed state and retry correlation; only completed profiles may use business APIs. These physical details are delegated; DDL is provided by the versioned Flyway migrations in matriz-backend.
 
@@ -56,6 +56,6 @@ Dedicated business audit records are out of scope following the revocation of NF
 
 Task assignment uses task ID as its primary key plus explicit pair uniqueness. Project/task deletion cascades to dependent content, while user/team references restrict deletion. Text checks, effort/status/priority checks and defaults enforce the approved data constraints. Timestamps use PostgreSQL `TIMESTAMP WITH TIME ZONE`. Foreign-key/query indexes support lookups, filters and cascades; substring project-name search remains a query implementation concern.
 
-Only `V1__initial_schema.sql` is required. The application does not use Spring Modulith's persistent JDBC event-publication registry, so no `event_publication` table is created. Dedicated audit storage is also omitted because NFR-11 was revoked.
+Only `V1__initial_schema.sql` is required. The application does not use Spring Modulith's persistent event-publication registry, so no `event_publication` table is created. Dedicated audit storage is also omitted because NFR-11 was revoked.
 
 Role/team eligibility, atomic assignment cleanup, pending-profile access checks and provisioning reconciliation remain application work. Schema constraints alone do not implement those workflows. Migration tests use isolated PostgreSQL containers; startup applies migrations only to the configured application datasource.

@@ -11,7 +11,7 @@ A Java 21 / Spring Boot modular monolith uses Spring Modulith and Clean Architec
 | Backend | Java 21; latest stable Spring Modulith. Verified baseline on 2026-10-29: **2.1.2**, in the Spring Boot 4.1 family. Pin compatible stable versions at implementation; do not use milestone/snapshot releases or floating production tags. |
 | Gateway | Spring Cloud Gateway Server WebFlux in its own Spring Boot process. HTTP routing decouples it from the Modulith process; this is compatible without making domain/persistence code reactive. Select its Boot/Cloud versions from the official compatibility matrix. |
 | Identity | Keycloak for email/password authentication and roles; API validates identity and enforces resource authorization. Realm/client names in the old API are still draft configuration. |
-| Data | PostgreSQL with Flyway versioned SQL migrations; remaining physical details follow D-01. |
+| Data | PostgreSQL with Spring Data JPA and Flyway versioned SQL migrations; remaining physical details follow D-01. |
 | Frontend | React + React Router. Local state and optional useContext for shared state; no Flux, useReducer or Redux Toolkit. Custom CSS selected; Tailwind CSS and shadcn/ui are allowed alternatives. |
 | Local runtime | Docker Compose includes web client, gateway, backend, Keycloak and database services. Redis is the approved limiter and revocation-state store. Include Grafana, Loki and Prometheus for local observability. |
 | Hosting | Production deferred; local Docker Compose is the current delivery target. |
