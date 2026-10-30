@@ -71,7 +71,7 @@ As an authorized Project Manager, I want to maintain tasks and filter by status/
 3. Authorized deletion respects the dependent-record policy and leaves no orphans.
 4. Validation/API errors retain form data, and pending requests prevent duplicate submissions.
 
-Use physical cascade deletion, server-zone 24-hour timestamps and the approved unpaginated list contract.
+Use physical cascade deletion and server-zone 24-hour timestamps. Task-list pagination and list controls are covered by US-05.1.
 
 ## US-03.3 — Manage zero or one Software Engineer assignee
 
@@ -113,6 +113,17 @@ As an authenticated user, I want accessible projects and task counts by status w
 4. Loading, empty, success and error states remain understandable at different screen widths.
 
 Administrators receive their administration navigation without project/task content; this summary does not add general analytics.
+
+## US-05.1 — Page, sort and filter listings
+
+As a user, I want long listings to be paginated and ordered consistently so that I can find records efficiently.
+
+1. Task lists paginate the selected accessible project's tasks, can be sorted by creation date, and honor the selected status filter (and existing priority filter) before pagination is applied.
+2. Project lists paginate accessible projects and sort them alphabetically by name; team lists paginate teams and sort them alphabetically by name.
+3. Administrator user lists paginate users and sort them by email. Listing access remains subject to the existing role and resource-access rules.
+4. The UI shows the current page and provides understandable loading, empty and error states. Dashboard/task-status counts cover the relevant authorized dataset rather than only the displayed page.
+
+The exact pagination request/response contract is delegated under D-01 and must be reflected in the API baseline before implementation.
 
 ## Cross-cutting verification
 
