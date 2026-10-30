@@ -6,6 +6,28 @@ Read `README.md` and the relevant files in `docs/` before starting. Treat docume
 
 `docs/constraints.md` is the authoritative pending-decision register. Proposed designs are not approval to implement them. If documents conflict, flag the conflict and pause only the affected work until it is resolved.
 
+## Run and test commands
+
+From the repository root, start the complete local application with:
+
+```text
+docker compose --profile prod up
+```
+
+Use `docker compose --profile prod up --build` when application images must be rebuilt. Stop the local environment while preserving volumes with `docker compose --profile prod down`.
+
+From `matriz-backend`, run the module-boundary test without Docker:
+
+```text
+mvnw.cmd -Dtest=ModuleStructureTests test
+```
+
+Run the complete backend test suite with Docker running, because integration tests start a PostgreSQL Testcontainers container:
+
+```text
+mvnw.cmd test
+```
+
 ## Working rules
 
 - Do not add features, business rules, or technical decisions that are not approved in the documentation.
