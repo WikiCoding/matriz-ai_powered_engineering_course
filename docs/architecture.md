@@ -22,8 +22,8 @@ The official release listing reports 2.1.2 while the project landing page still 
 
 ```mermaid
 flowchart LR
-  Web[React web client] --> Gateway[Reactive API gateway]
-  Web --> KC[Keycloak login]
+  Web[React web client] -->|POST /api/v1/auth/login| Gateway[Reactive API gateway]
+  Gateway -->|password-grant token exchange| KC[Keycloak token endpoint]
   Gateway --> API[Spring Modulith API]
   API --> Users[User module]
   API --> Teams[Team module]
@@ -45,7 +45,7 @@ Spring validation handles request shape and field constraints. Domain/applicatio
 
 ## Authentication, authorization and rate limiting
 
-Keycloak is the only credential and role authority. Browser login uses OIDC authorization code with PKCE. The delegated security settings below define session handling and provisioning. Domain records reference local profiles linked to Keycloak subjects. No independent application role field may override Keycloak roles.
+Keycloak is the only credential and role authority. The gateway's public `POST /api/v1/auth/login` endpoint forwards credentials to Keycloak's token endpoint using the password grant and returns the token response. Its authenticated, Administrator-only `POST /api/v1/auth/register` endpoint uses a narrowly permissioned Keycloak service account to create an identity with a temporary password and assign one realm role, then calls the backend to create the linked local profile and its exactly-one team membership. Domain records reference local profiles linked to Keycloak subjects. No independent application role field may override Keycloak roles.
 
 The backend derives owner/author from verified authentication and checks project access for every task, assignment and comment operation. UI navigation/hidden actions are not authorization. All Project Managers and Software Engineers have access to all projects. Assignment requires a Software Engineer in the project team; moving a user removes old-team assignments atomically. Administrators cannot access project/task content; they manage accounts, roles and teams.
 
@@ -102,18 +102,20 @@ Sources: [Spring Boot database initialization](https://docs.spring.io/spring-boo
 These are selected implementation settings under the user's approval of proposal 6, not pre-existing product requirements.
 
 - Keycloak: minimum password length 15 characters, allow passphrases, reject passwords equal to the username/email. Temporary passwords require change on first login. Enable temporary brute-force lockout after five consecutive failures, with a 15-minute lockout; verify the pinned Keycloak configuration produces this behavior.
-- Absolute session maximum eight hours; idle timeout 30 minutes; access-token lifetime five minutes. Keep SPA tokens only in memory, never localStorage/sessionStorage. Use OIDC authorization code with PKCE, exact redirect allowlists and refresh-token rotation. Reload may restore login through an active Keycloak session.
+- Absolute session maximum eight hours; idle timeout 30 minutes; access-token lifetime five minutes. Keep SPA tokens only in memory, never localStorage/sessionStorage. Use the configured Keycloak password grant and refresh-token rotation. Reload may restore login through a valid refresh token.
 - Immediate API logout: validate JWT signature, issuer, audience and expiry, then check shared server-side session revocation on every authorized request at the gateway and backend. Key revocation by validated Keycloak session ID, retain it through the maximum remaining session/token lifetime and do not cache a positive authorization across requests. Reject replayed tokens from a revoked session even if their JWT expiry is in the future.
 - Logout records revocation durably in Redis before reporting success, then terminates the Keycloak session. Keycloak logout failure must be reported/retried without re-enabling the locally revoked session. Redis loss or unavailability must never resurrect sessions; use persistence and fail closed, requiring reauthentication when session-state integrity is uncertain. The approved limiter outage response remains 429.
 - Integrate verified Keycloak back-channel logout to revoke corresponding application access. API logout applies to the current session; changing a role invalidates all affected user's active application sessions so old permissions cannot persist. Role changes are Administrator-only, reconciled with Keycloak; enforce the current role/eligibility before subsequent mutations.
 - Logout cannot undo already committed transactions. Tests must prove that requests authorized after successful logout are rejected across replicas.
+
+Implementation scope update (2026-10-29): the user requested immediate logout invalidation in the gateway and explicitly deferred backend dependencies/enforcement for this change. Gateway login registers active session IDs in shared Redis; logout writes a revocation tombstone before the direct Keycloak logout request. Unknown session IDs fail closed, including after loss of Redis state. The current public-client password-grant integration uses Keycloak's legacy refresh-token logout request; the API accepts the current refresh token in a JSON body. Logout may be retried with a signed, unexpired access token after revocation, without restoring business access. Compose uses AOF with synchronous fsync and no eviction. Backend enforcement and provider-initiated back-channel logout remain outstanding; the original end-to-end acceptance criteria are not yet complete.
 - Audit login outcomes, user/role/team changes and deletions. Retain actor/target identifiers and outcomes, not credentials or content. Durable business audit records are separate from best-effort operational logs; retain audit records and operational logs for one year, then expire them. No organizational policy is currently defined.
 
 ## Delegated data and API completion
 
 User, Team and Project Management modules retain the ownership described above. Project/task/comment/assignment coordination is internal to Project Management; use explicit application ports for eligibility checks and cleanup orchestration involving User and Team. Framework wiring coordinates cross-module workflows without cyclic module dependencies. Combining modules does not change the approved API routes, schemas, role permissions or logical entities. Physical schema uses PostgreSQL UUID keys, required foreign keys, case-insensitive email uniqueness and a unique task assignment. Store timestamps as instants and render the agreed server-local 24-hour format.
 
-Provisioning reserves a unique identity/profile correlation, creates the Keycloak identity and finalizes the local profile/team link; partial states cannot log in to business operations. Retry using the same correlation; reconcile incomplete records without reporting success or creating duplicate users. Keycloak role changes and local assignment cleanup use a coordinated retryable workflow because they cannot share a PostgreSQL transaction. Application-owned project/team/task moves clean up invalid assignments in the same transaction. Reject occupied-team deletion and duplicate/second assignments with 409.
+Provisioning reserves a unique identity/profile correlation, creates the Keycloak identity and finalizes the local profile/team link; partial states cannot log in to business operations. The gateway compensates a role/profile failure by deleting the just-created Keycloak identity and never reports success. Retry using the same correlation; reconcile incomplete records without reporting success or creating duplicate users. Keycloak role changes and local assignment cleanup use a coordinated retryable workflow because they cannot share a PostgreSQL transaction. Application-owned project/team/task moves clean up invalid assignments in the same transaction. Reject occupied-team deletion and duplicate/second assignments with 409.
 
 ## Spring Boot 4 observability and Compose topology
 

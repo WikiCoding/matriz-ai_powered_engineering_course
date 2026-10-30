@@ -19,9 +19,9 @@
       "publicClient": true,
       "protocol": "openid-connect",
       "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:3000"]
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:*/*"],
+      "webOrigins": ["+"]
     }
   ],
   "users": [
@@ -32,8 +32,9 @@
       "lastName": "Administrator",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": [],
       "credentials": [
-        { "type": "password", "value": "MatrizAdmin123!", "temporary": true }
+        { "type": "password", "value": "MatrizAdmin123!", "temporary": false }
       ],
       "realmRoles": ["ADMINISTRATOR"]
     },
@@ -44,8 +45,9 @@
       "lastName": "Project Manager",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": [],
       "credentials": [
-        { "type": "password", "value": "MatrizManager123!", "temporary": true }
+        { "type": "password", "value": "MatrizManager123!", "temporary": false }
       ],
       "realmRoles": ["PROJECT_MANAGER"]
     },
@@ -56,8 +58,9 @@
       "lastName": "Software Engineer",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": [],
       "credentials": [
-        { "type": "password", "value": "MatrizEngineer123!", "temporary": true }
+        { "type": "password", "value": "MatrizEngineer123!", "temporary": false }
       ],
       "realmRoles": ["SOFTWARE_ENGINEER"]
     }

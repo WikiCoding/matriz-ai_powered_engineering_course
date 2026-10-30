@@ -4,17 +4,46 @@ info:
   version: 0.5.0
   description: Approved API baseline revised for customer decisions. Remaining details are in docs/constraints.md.
 servers:
-  - url: https://api.matriz.example.com/v1
+  - url: https://api.matriz.example.com
     description: Placeholder host; deployment is undecided.
 tags: [{name: Auth}, {name: Users}, {name: Teams}, {name: Projects}, {name: Tasks}, {name: Assignments}, {name: Comments}, {name: Dashboard}]
 paths:
-  /auth/logout:
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Exchange user credentials for Keycloak tokens
+      operationId: login
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest'}}}}
+      responses:
+        '200': {description: Keycloak access and refresh tokens, content: {application/json: {schema: {$ref: '#/components/schemas/KeycloakTokenResponse'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Administrator provisions a Keycloak identity and local user profile
+      operationId: register
+      description: Requires the ADMINISTRATOR Keycloak realm role. The gateway creates a temporary Keycloak password, assigns the requested realm role, then requests the backend to create the linked profile and its exactly-one team membership. If local-profile creation fails, the gateway deletes the new Keycloak identity and does not report success.
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
+      responses: {'201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '502': {description: Keycloak or backend provisioning dependency failed}, '503': {description: Keycloak provisioning client is not configured}, '429': {$ref: '#/components/responses/TooManyRequests'}}
+  /api/v1/auth/logout:
     post:
       tags: [Auth]
       summary: Immediately revoke current API session and terminate Keycloak session
       operationId: logout
-      responses: {'204': {description: Application session revoked and identity logout completed}, '503': {description: Identity logout incomplete; locally revoked session remains blocked}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
-  /users/{userId}/role:
+      description: Requires a bearer access token and the current refresh token. Revokes the session in Redis before terminating it at Keycloak. A valid unexpired access token can retry this endpoint after a Keycloak failure, even though business access is already revoked.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: {type: string, minLength: 1, writeOnly: true}
+      responses: {'204': {description: Application session revoked and identity logout completed}, '400': {description: Missing or blank refresh token}, '503': {description: Session store unavailable or Keycloak logout incomplete. If Redis revocation succeeded the session remains blocked; retry logout.}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
+  /api/v1/users/{userId}/role:
     parameters: [{ $ref: '#/components/parameters/UserId' }]
     put:
       tags: [Users]
@@ -22,7 +51,7 @@ paths:
       operationId: replaceUserRole
       requestBody: {required: true, content: {application/json: {schema: {type: object, required: [role], properties: {role: {$ref: '#/components/schemas/Role'}}}}}}
       responses: {'200': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Role change requires reconciliation; success not claimed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
-  /teams/{teamId}:
+  /api/v1/teams/{teamId}:
     parameters: [{name: teamId, in: path, required: true, schema: {type: string, format: uuid}}]
     patch:
       tags: [Teams]
@@ -35,19 +64,13 @@ paths:
       summary: Administrator deletes an empty team
       operationId: deleteTeam
       responses: {'204': {description: Empty team deleted}, '409': {$ref: '#/components/responses/Conflict'}, '404': {$ref: '#/components/responses/NotFound'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '429': {$ref: '#/components/responses/TooManyRequests'}}
-  /me:
-    get:
-      tags: [Auth]
-      summary: Get authenticated profile
-      operationId: getCurrentUser
-      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/User'}, '401': {$ref: '#/components/responses/Unauthorized'}}
-  /dashboard:
+  /api/v1/dashboard:
     get:
       tags: [Dashboard]
       summary: Accessible projects and task counts by status
       operationId: getDashboard
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Dashboard'}, '401': {$ref: '#/components/responses/Unauthorized'}}
-  /users:
+  /api/v1/users:
     get:
       tags: [Users]
       summary: List users
@@ -59,7 +82,7 @@ paths:
       operationId: createUser
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UserCreate'}}}}
       responses: {'409': {$ref: '#/components/responses/Conflict'}, '429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-  /users/{userId}/team-memberships:
+  /api/v1/users/{userId}/team-memberships:
     parameters: [{ $ref: '#/components/parameters/UserId' }]
     get:
       tags: [Users]
@@ -72,7 +95,7 @@ paths:
       operationId: replaceUserTeamMemberships
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TeamList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-  /teams:
+  /api/v1/teams:
     post:
       tags: [Teams]
       summary: Administrator creates a team
@@ -84,7 +107,7 @@ paths:
       summary: List accessible teams
       operationId: listTeams
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
-  /projects:
+  /api/v1/projects:
     get:
       tags: [Projects]
       summary: List accessible projects, optionally searched by name
@@ -97,7 +120,7 @@ paths:
       operationId: createProject
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProjectCreate'}}}}
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-  /projects/{projectId}:
+  /api/v1/projects/{projectId}:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
       tags: [Projects]
@@ -115,7 +138,7 @@ paths:
       summary: Delete an accessible project
       operationId: deleteProject
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
-  /projects/{projectId}/tasks:
+  /api/v1/projects/{projectId}/tasks:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
       tags: [Tasks]
@@ -129,7 +152,7 @@ paths:
       operationId: createProjectTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskCreate'}}}}
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
-  /tasks/{taskId}:
+  /api/v1/tasks/{taskId}:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Tasks]
@@ -147,7 +170,7 @@ paths:
       summary: Delete an accessible task
       operationId: deleteTask
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
-  /tasks/{taskId}/assignments:
+  /api/v1/tasks/{taskId}/assignments:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Assignments]
@@ -160,14 +183,14 @@ paths:
       operationId: addTaskAssignment
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AssignmentCreate'}}}}
       responses: {'409': {$ref: '#/components/responses/Conflict'}, '429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Assignment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
-  /tasks/{taskId}/assignments/{userId}:
+  /api/v1/tasks/{taskId}/assignments/{userId}:
     parameters: [{ $ref: '#/components/parameters/TaskId' }, { $ref: '#/components/parameters/UserId' }]
     delete:
       tags: [Assignments]
       summary: Project Manager removes the task assignment
       operationId: removeTaskAssignment
       responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Assignment removed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
-  /tasks/{taskId}/comments:
+  /api/v1/tasks/{taskId}/comments:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Comments]
@@ -208,6 +231,17 @@ components:
       type: object
       required: [email, role, teamId]
       properties: {email: {type: string, format: email, description: Unique case-insensitively}, role: {$ref: '#/components/schemas/Role'}, teamId: {type: string, format: uuid}}
+    RegisterRequest:
+      type: object
+      required: [username, email, password, role, teamId]
+      properties:
+        username: {type: string, minLength: 1}
+        email: {type: string, format: email, description: Unique case-insensitively}
+        password: {type: string, format: password, minLength: 15, writeOnly: true, description: Delivered as a temporary password and changed at first login}
+        role: {$ref: '#/components/schemas/Role'}
+        teamId: {type: string, format: uuid}
+    LoginRequest: {type: object, required: [email, password], properties: {email: {type: string}, password: {type: string, format: password, writeOnly: true}}}
+    KeycloakTokenResponse: {type: object, required: [access_token, token_type, expires_in], properties: {access_token: {type: string}, refresh_token: {type: string}, token_type: {type: string}, expires_in: {type: integer, format: int64}, refresh_expires_in: {type: integer, format: int64}, scope: {type: string}}}
     TeamWrite: {type: object, required: [name], properties: {name: {type: string, minLength: 1, pattern: '\\S'}}}
     Team: {type: object, required: [id, name], properties: {id: {type: string, format: uuid}, name: {type: string, minLength: 1}}}
     TeamMembershipReplace: {type: object, required: [teamIds], properties: {teamIds: {type: array, minItems: 1, maxItems: 1, items: {type: string, format: uuid}}}}

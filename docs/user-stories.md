@@ -23,9 +23,10 @@ As an Administrator, I want to assign or move users between teams.
 
 As a user, I want a complete authenticated session.
 
-1. Valid email/password credentials authenticate through Keycloak; invalid credentials and unauthenticated API requests are rejected.
-2. Profile retrieval reflects the verified authenticated user.
-3. After logout succeeds, subsequent API requests from that session are rejected immediately on every replica, including replay of its access token. Expired sessions lead to login with an understandable message.
+1. A `POST /api/v1/auth/login` request to the API gateway forwards the user's email/password credentials to Keycloak's token endpoint using the password grant.
+2. Valid credentials return Keycloak access/refresh tokens; invalid credentials and unauthenticated API requests are rejected.
+3. Profile retrieval reflects the verified authenticated user.
+4. After logout succeeds, subsequent API requests from that session are rejected immediately on every replica, including replay of its access token. Expired sessions lead to login with an understandable message.
 
 Verify both UI and direct API requests, including session and token replay after logout.
 
