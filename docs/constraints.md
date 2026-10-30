@@ -5,7 +5,7 @@
 Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 
 - English application/documentation; approximately 500 users.
-- Java 21, Spring Boot/Spring Modulith modular monolith and Clean Architecture; separate Spring Cloud Gateway Server WebFlux.
+- Java 21, Spring Boot/Spring Modulith modular monolith and Clean Architecture; integrated HTTP edge in the same Spring MVC backend process (customer simplification on 2026-10-30).
 - Keycloak owns credentials and roles; PostgreSQL owns application data.
 - Docker Compose runs the full local environment, including Redis, Grafana, Loki and the selected Prometheus metrics store.
 - React, React Router, local state and optional useContext; no Flux, useReducer or Redux Toolkit. Custom CSS remains selected; Tailwind CSS and shadcn/ui are permitted alternatives. shadcn/ui may use Tailwind styling; permission to use it does not prohibit that dependency.
@@ -21,7 +21,7 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 - D-11: only Software Engineers create comments; Project Managers and Software Engineers read comments; Project Managers manage assignments. All Project Managers and Software Engineers can access all projects, regardless of ownership or team. Resource/role checks still apply.
 - D-12: one Redis token bucket per client IP shared across routes and instances; refill five tokens/second, capacity five, one token per request. This is an average rate with a small burst, not a strict rolling-window count. Trust forwarded IP headers only from explicitly configured proxies; ignore them otherwise. Quota exhaustion or limiter outage returns HTTP 429.
 - D-13 (resolved, delegated selection): Flyway with versioned PostgreSQL SQL migrations; see architecture.md.
-- This update authorizes documentation and contract revisions; no application implementation is included.
+- The original 2026-10-29 revision authorized documentation and contract changes. Subsequent implementation requests, including D-15, authorize their stated application scope.
 
 ## Remaining decision register
 
@@ -34,6 +34,9 @@ Approvals of proposals 1–8 settle business behavior and delegate technical sec
 | D-10-R (revoked 2026-10-30) | The customer revoked NFR-11. Do not store business audit records and do not impose a fixed operational-log retention period for the local MVP. Ordinary operational logging and observability remain in scope without a mandated retention duration. | No pending retention decision. |
 
 ## Latest approvals and delegated implementation decisions
+
+- D-15 (2026-10-30): customer requested merging `matriz-api-gateway` into `matriz-backend` for one Java deployment unit. This supersedes the separate reactive gateway topology. Keep the backend MVC/JPA stack; integrate authentication, session checks, CORS and Redis IP limiting as HTTP infrastructure, retaining User, Team and Project Management ownership. Keycloak, PostgreSQL and Redis remain supporting services. No HTTP forwarding to a separate backend process is needed.
+
 
 - D-01: the customer approved one Project Management module owning projects, tasks, assignments and comments on 2026-10-29, replacing the separate Project and Task boundaries. User and Team remain separate modules; the backend remains one deployable process. Keep distinct internal responsibilities and entities within Project Management. This changes internal organization only; existing API contracts, data ownership by the application/Keycloak, business rules and NFR targets remain unchanged. Module interfaces, remaining physical schema details and missing team/role API operations remain delegated. Collection listings now require pagination: tasks sort by creation date and filter by status; projects and teams sort alphabetically by name; users sort by email. The pagination request/response contract is a delegated implementation detail and the API baseline must be revised before implementing these listings. Reject duplicate/second assignments with HTTP 409; replace via explicit removal then addition.
 - D-02: Administrators assign exactly one role per account. Emails are unique case-insensitively. Keycloak owns identity/email; application owns team membership. No email/profile editing in MVP. Provisioning succeeds only when both identity and application records are ready; partial failures require retry/reconciliation without duplicate accounts.
@@ -49,3 +52,10 @@ Approvals of proposals 1–8 settle business behavior and delegate technical sec
 MVP: login/logout/profile, projects/tasks with physical deletion, zero-or-one Software Engineer assignee, comments, project-name search, paginated/sorted listings, task status/priority filters and home task counts; administrator user/team management. Backlogs, Kanban, general analytics, external integrations, public registration and password recovery remain outside scope.
 
 The API baseline in openapi.yaml predates the approved pagination/list-sorting change and must be revised before implementation. The PNG wireframe predates the single-assignee and pagination/list-sorting decisions and is illustrative only; current textual design notes take precedence. No attachment was available for this update; role mapping uses the user instructions and existing Markdown requirements.
+
+
+## Superseding decision D-16 (2026-10-30)
+
+The customer removed backend session tracking and IP rate limiting. This supersedes all earlier Redis, limiter, immediate logout, back-channel revocation and immediate role-change invalidation requirements above. Redis is removed from the backend dependencies and Compose. Keycloak retains its own sessions and credential protections. The backend validates JWTs statelessly; logout terminates the Keycloak session, while issued access tokens and role claims remain usable until expiry (five minutes plus validator clock skew). Clients discard tokens on logout. Provider logout failure is reported and can be retried.
+
+Valid tokens require no backend session registration. Missing, invalid and expired tokens remain rejected. Obsolete limiter tests were removed and security tests adjusted. Tests and Docker validation were not run, as requested; prior verification results apply only to the previous implementation. Legacy gateway source remains historical and is not deployed. Existing Redis volumes were not deleted.

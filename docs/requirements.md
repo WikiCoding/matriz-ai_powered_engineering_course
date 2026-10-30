@@ -65,5 +65,12 @@ Administrators communicate temporary credentials in person. Keycloak requires pa
 - **FR-15 Provisioning:** emails are unique without case sensitivity; Keycloak owns identity/email and the application owns team membership. Complete both records before reporting success; reconcile partial failures. Email/profile editing is excluded.
 - **FR-16 Logout:** invalidate the current application session and its API access immediately across replicas. Existing bearer tokens must not bypass session revocation.
 - **NFR-09 Performance:** p95 response time under two seconds. Measurement boundary, concurrent load and dataset size must be documented for formal acceptance under D-08; approximately 500 registered users does not specify concurrent load.
-- **NFR-10 Observability:** backend and gateway include Spring Actuator, Micrometer and OTLP export. Compose includes Grafana, Loki and Prometheus for metrics storage under delegated topology choices. Observe HTTP latency/errors, JVM, database pools and limiter health.
+- **NFR-10 Observability:** the backend, including its integrated HTTP edge, includes Spring Actuator, Micrometer and OTLP export. Compose includes Grafana, Loki and Prometheus for metrics storage under delegated topology choices. Observe HTTP latency/errors, JVM, database pools and limiter health.
 - **NFR-11 (revoked 2026-10-30):** Business audit records are not part of this project. Do not add dedicated audit storage. Operational logging and observability remain governed by NFR-10, with no fixed retention period required for the local MVP.
+
+
+## Superseding decision D-16 (2026-10-30)
+
+The customer removed backend session tracking and IP rate limiting. This supersedes all earlier Redis, limiter, immediate logout, back-channel revocation and immediate role-change invalidation requirements above. Redis is removed from the backend dependencies and Compose. Keycloak retains its own sessions and credential protections. The backend validates JWTs statelessly; logout terminates the Keycloak session, while issued access tokens and role claims remain usable until expiry (five minutes plus validator clock skew). Clients discard tokens on logout. Provider logout failure is reported and can be retried.
+
+Valid tokens require no backend session registration. Missing, invalid and expired tokens remain rejected. Obsolete limiter tests were removed and security tests adjusted. Tests and Docker validation were not run, as requested; prior verification results apply only to the previous implementation. Legacy gateway source remains historical and is not deployed. Existing Redis volumes were not deleted.

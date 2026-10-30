@@ -8,11 +8,11 @@ The customer adopted Practical Assignment 03 on 2026-10-29. The MVP includes log
 
 ## Selected architecture
 
-Java 21, Spring Boot/Spring Modulith, Clean Architecture, a separate reactive Spring Cloud Gateway, IP rate limiting, Keycloak and PostgreSQL with Flyway migrations; React with React Router and reusable UI components. Local Docker Compose runs the complete environment with Grafana/Loki, Prometheus metrics storage, and Actuator/Micrometer OTLP export. Production hosting is deferred; current delivery targets local Docker Compose. The confirmed SLA is 99.95%.
+Java 21, Spring Boot/Spring Modulith, Clean Architecture, an integrated HTTP security/authentication edge in the same backend process, IP rate limiting, Keycloak and PostgreSQL with Flyway migrations; React with React Router and reusable UI components. Local Docker Compose runs the backend, Keycloak, PostgreSQL and Redis. Grafana/Loki and Prometheus configuration is present, but their Compose services remain commented out. Production hosting is deferred; current delivery targets local Docker Compose. The confirmed SLA is 99.95%.
 
 Testing choices: Mockito for backend units; Spring Boot with Testcontainers for integration; Jest for UI units and Playwright for browser journeys.
 
-The backend has User, Team and Project Management modules in one deployable process. Project Management groups projects, tasks, assignments and comments with distinct internal responsibilities, reflecting their shared lifecycle and business rules.
+The backend has User, Team and Project Management modules plus HTTP edge infrastructure in one deployable process. Project Management groups projects, tasks, assignments and comments with distinct internal responsibilities, reflecting their shared lifecycle and business rules.
 
 ## Documentation
 
@@ -34,7 +34,7 @@ Start the supporting services:
 docker compose up
 ```
 
-Start the complete local application, including the web client, gateway and backend:
+Build the backend first with `./mvnw verify` from `matriz-backend` (Windows: `.\mvnw.cmd verify`), with Docker running for integration tests. Then start the backend and supporting services:
 
 ```text
 docker compose --profile prod up
@@ -68,8 +68,19 @@ On first startup with a new Keycloak volume, the Compose setup imports the `matr
 
 The initial passwords require changing on first login. These credentials are for local development only and must not be reused elsewhere.
 
-Observability is preconfigured for Spring Boot 4.x Actuator/Micrometer applications. Prometheus scrapes the backend and gateway at `/actuator/prometheus`, and Grafana automatically provisions Prometheus and Loki datasources. Open Grafana at `http://localhost:3001` using the configured local Grafana credentials.
+Observability configuration is supplied for Spring Boot 4.x Actuator/Micrometer applications; enable the currently commented-out observability services before using it. Prometheus is configured to scrape the backend at `/actuator/prometheus`, and Grafana automatically provisions Prometheus and Loki datasources. Open Grafana at `http://localhost:3001` using the configured local Grafana credentials.
 
 ## Status
 
 Schema design and API contracts are approved with the customer revisions recorded in constraints.md, except that the API baseline must be revised for the subsequently approved pagination/list-sorting requirement. The text documentation reflects single optional assignment, UUID-only resource identifiers, physical deletion, server-local timestamps, Redis limiting, and paginated/sorted listings. The PNG wireframe is an older illustration. Core business rules and technical completion are approved/delegated. Business audit storage and a fixed operational-log retention period are not required; response time must be under two seconds at p95. Production is deferred. Local implementation can start once the API pagination contract is revised; load-test conditions and future production SLA measurement remain acceptance details in the decision register. The backend now has User, Team and Project Management package scaffolds, environment-based PostgreSQL connection settings and a module-boundary test; see [backend setup](matriz-backend/README.md). The Flyway migration initializes only application and provisioning tables; no unused Modulith event-publication or audit tables are created. Business behavior remains unimplemented.
+
+## Single Java deployment (2026-10-30)
+
+First run `./mvnw verify` from `matriz-backend` (Windows: `.\mvnw.cmd verify`), then run `docker compose --profile prod up --build` from the repository root to build the consolidated backend at `http://localhost:8080`. Login, registration, logout, IP limiting and session validation now run in this process. The separate `matriz-api-gateway` is not deployed. Supporting Keycloak, PostgreSQL and Redis services remain separate. Frontend and observability services are currently commented out in Compose. See [backend setup](matriz-backend/README.md) for configuration and verification limits.
+
+
+## Superseding decision D-16 (2026-10-30)
+
+The customer removed backend session tracking and IP rate limiting. This supersedes all earlier Redis, limiter, immediate logout, back-channel revocation and immediate role-change invalidation requirements above. Redis is removed from the backend dependencies and Compose. Keycloak retains its own sessions and credential protections. The backend validates JWTs statelessly; logout terminates the Keycloak session, while issued access tokens and role claims remain usable until expiry (five minutes plus validator clock skew). Clients discard tokens on logout. Provider logout failure is reported and can be retried.
+
+Valid tokens require no backend session registration. Missing, invalid and expired tokens remain rejected. Obsolete limiter tests were removed and security tests adjusted. Tests and Docker validation were not run, as requested; prior verification results apply only to the previous implementation. Legacy gateway source remains historical and is not deployed. Existing Redis volumes were not deleted.

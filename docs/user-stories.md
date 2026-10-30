@@ -23,7 +23,7 @@ As an Administrator, I want to assign or move users between teams.
 
 As a user, I want a complete authenticated session.
 
-1. A `POST /api/v1/auth/login` request to the API gateway forwards the user's email/password credentials to Keycloak's token endpoint using the password grant.
+1. A `POST /api/v1/auth/login` request to the integrated backend HTTP edge forwards the user's email/password credentials to Keycloak's token endpoint using the password grant.
 2. Valid credentials return Keycloak access/refresh tokens; invalid credentials and unauthenticated API requests are rejected.
 3. After logout succeeds, subsequent API requests from that session are rejected immediately on every replica, including replay of its access token. Expired sessions lead to login with an understandable message.
 
@@ -141,4 +141,11 @@ Verify Administrator-only role changes with exactly one role; no Administrator p
 
 Replay the logged-out session cookie and bearer token on each replica immediately after successful logout; both must fail. Cover in-flight requests separately: logout prevents subsequent authorization, but cannot undo a transaction already committed.
 
-Verify gateway/backend metrics and logs arrive in Grafana through their respective stores, no secrets/content leak to telemetry, and p95 latency is measurable against the under-two-second NFR. No dedicated business-audit store or fixed operational-log retention test is required. Load-test conditions remain D-08; production and its SLA acceptance are deferred.
+Verify consolidated backend metrics and logs arrive in Grafana through their respective stores, no secrets/content leak to telemetry, and p95 latency is measurable against the under-two-second NFR. No dedicated business-audit store or fixed operational-log retention test is required. Load-test conditions remain D-08; production and its SLA acceptance are deferred.
+
+
+## Superseding decision D-16 (2026-10-30)
+
+The customer removed backend session tracking and IP rate limiting. This supersedes all earlier Redis, limiter, immediate logout, back-channel revocation and immediate role-change invalidation requirements above. Redis is removed from the backend dependencies and Compose. Keycloak retains its own sessions and credential protections. The backend validates JWTs statelessly; logout terminates the Keycloak session, while issued access tokens and role claims remain usable until expiry (five minutes plus validator clock skew). Clients discard tokens on logout. Provider logout failure is reported and can be retried.
+
+Valid tokens require no backend session registration. Missing, invalid and expired tokens remain rejected. Obsolete limiter tests were removed and security tests adjusted. Tests and Docker validation were not run, as requested; prior verification results apply only to the previous implementation. Legacy gateway source remains historical and is not deployed. Existing Redis volumes were not deleted.

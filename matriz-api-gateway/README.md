@@ -1,3 +1,5 @@
+> Retired deployment (2026-10-30, D-15): authentication, session validation and IP limiting now run inside `matriz-backend`. This directory is retained as a historical source reference; it is not built or started by Compose. Use [the backend](../matriz-backend/README.md). The remaining text describes the former standalone service.
+
 # Matriz API Gateway
 
 The Matriz API Gateway is the reactive edge service for the Matriz application. It is built with Spring Cloud Gateway Server WebFlux and is responsible for receiving client HTTP requests, applying gateway-level security and rate limiting, and forwarding API traffic to the Matriz backend.
