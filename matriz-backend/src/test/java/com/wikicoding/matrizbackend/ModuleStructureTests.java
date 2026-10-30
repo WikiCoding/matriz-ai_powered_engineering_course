@@ -9,10 +9,14 @@ class ModuleStructureTests {
 
     @Test
     void detectsApprovedModulesAndVerifiesBoundaries() {
+        // Arrange: inspect the production application.
         var modules = ApplicationModules.of(MatrizBackendApplication.class);
 
-        assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
-                .containsExactlyInAnyOrder("user", "team", "projectmanagement");
+        // Act
         modules.verify();
+
+        // Assert
+        assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
+                .containsExactlyInAnyOrder("user", "team", "projectmanagement", "edge");
     }
 }

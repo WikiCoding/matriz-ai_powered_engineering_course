@@ -1,0 +1,4 @@
+**
+!target/
+!target/matriz-backend-0.0.1-SNAPSHOT.jar
+!Dockerfile
