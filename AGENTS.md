@@ -50,7 +50,7 @@ Report assumptions, files changed, check results, and any checks that could not 
 3. Implement the smallest complete change within the authorized scope. Keep module ownership and dependency boundaries intact. Update affected contracts and documentation alongside implementation; revise the pagination API baseline before implementing collection listings.
 4. Add or update meaningful automated tests for changed behavior. For bug fixes, reproduce the defect with a regression test where practical. Test observable outcomes, not merely the implementation's internal structure.
 5. Review the diff as a separate verification pass: compare it with acceptance criteria, check failure paths and authorization, inspect test quality and remove accidental unrelated changes. A self-review is not an independent review.
-6. Run the affected component's documented build and test checks. Fix failures introduced by the change and rerun affected checks. For changes crossing components, also verify the affected local application journey when the environment is available.
+6. Run full verification only when the user clearly prompts for it, to conserve token usage. Fix failures introduced by the change and rerun affected checks. For changes crossing components, also verify the affected local application journey when the environment is available when full verification is requested.
 7. Hand off with evidence: list the commands run and their outcomes, covered acceptance criteria, skipped tests, failures and blockers. Do not claim completion of verification when required checks are failing or unavailable. Distinguish pre-existing failures from regressions using evidence.
 
 ## Test style: Arrange, Act, Assert (AAA)
