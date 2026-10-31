@@ -65,7 +65,7 @@ services:
     environment:
       POSTGRES_DB: ${APP_DB_NAME:-matriz}
       POSTGRES_USER: ${APP_DB_USER:-matriz}
-      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-matriz-local-password}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-matriz}
     volumes:
       - app-db-data:/var/lib/postgresql/data
     ports:
