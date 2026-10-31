@@ -23,7 +23,7 @@ paths:
       tags: [Auth]
       summary: Administrator provisions a Keycloak identity and local user profile
       operationId: register
-      description: Requires the ADMINISTRATOR Keycloak realm role. The integrated backend edge creates a temporary Keycloak password, assigns the requested realm role, then invokes the User module locally to create the linked profile and its exactly-one team membership. If local-profile creation fails, the edge deletes the new Keycloak identity and does not report success.
+      description: Requires the ADMINISTRATOR Keycloak realm role. The integrated backend edge creates an email-verified Keycloak identity with a directly usable password, assigns the requested realm role, then invokes the User module locally to create the linked profile and its exactly-one team membership. If local-profile creation fails, the edge deletes the new Keycloak identity and does not report success.
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
       responses: {'201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '502': {description: Keycloak or backend provisioning dependency failed}, '503': {description: Keycloak provisioning client is not configured}}
   /api/v1/auth/logout:
@@ -232,11 +232,13 @@ components:
       properties: {email: {type: string, format: email, description: Unique case-insensitively}, role: {$ref: '#/components/schemas/Role'}, teamId: {type: string, format: uuid}}
     RegisterRequest:
       type: object
-      required: [username, email, password, role, teamId]
+      required: [username, email, firstName, lastName, password, role, teamId]
       properties:
         username: {type: string, minLength: 1}
         email: {type: string, format: email, description: Unique case-insensitively}
-        password: {type: string, format: password, minLength: 15, writeOnly: true, description: Delivered as a temporary password and changed at first login}
+        firstName: {type: string, minLength: 1, pattern: '\\S'}
+        lastName: {type: string, minLength: 1, pattern: '\\S'}
+        password: {type: string, format: password, minLength: 15, writeOnly: true, description: Delivered in person and usable for direct login}
         role: {$ref: '#/components/schemas/Role'}
         teamId: {type: string, format: uuid}
     LoginRequest: {type: object, required: [email, password], properties: {email: {type: string}, password: {type: string, format: password, writeOnly: true}}}
@@ -289,7 +291,7 @@ security: [{keycloakOAuth: [openid, profile, email]}]
 x-rate-limiting: {required: false}
 x-keycloak: {realm: matriz, clientId: matriz-client, issuer: "https://{keycloak-host}/realms/matriz"}
 
-x-session: {absoluteMaximumHours: 8, reauthenticationRequired: true, temporaryPasswordDelivery: in-person, firstLoginPasswordChange: required, idleTimeoutMinutes: 30, accessTokenMinutes: 5, logoutInvalidation: access-token-expiry}
+x-session: {absoluteMaximumHours: 8, reauthenticationRequired: true, passwordDelivery: in-person, firstLoginPasswordChange: not-required, idleTimeoutMinutes: 30, accessTokenMinutes: 5, logoutInvalidation: access-token-expiry}
 x-project-access: {roles: [PROJECT_MANAGER, SOFTWARE_ENGINEER], scope: all-projects, administratorVisibility: denied}
 
 x-role-policy: {rolesPerUser: 1, roleChanges: ADMINISTRATOR, commentReaders: [PROJECT_MANAGER, SOFTWARE_ENGINEER], commentWriters: [SOFTWARE_ENGINEER], ownershipTransfer: disabled, profileEditing: disabled}

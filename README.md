@@ -66,7 +66,9 @@ On first startup with a new Keycloak volume, the Compose setup imports the `matr
 | Project Manager | `manager@matriz.local` | `MatrizManager123!` |
 | Software Engineer | `engineer@matriz.local` | `MatrizEngineer123!` |
 
-The initial passwords require changing on first login. These credentials are for local development only and must not be reused elsewhere.
+These initial credentials are for local development only and must not be reused elsewhere.
+
+Accounts created through `POST /api/v1/auth/register` are marked email verified and can log in directly with the supplied password. This does not retroactively clear `UPDATE_PASSWORD` for accounts created before the 2026-10-31 policy change.
 
 Observability configuration is supplied for Spring Boot 4.x Actuator/Micrometer applications; enable the currently commented-out observability services before using it. Prometheus is configured to scrape the backend at `/actuator/prometheus`, and Grafana automatically provisions Prometheus and Loki datasources. Open Grafana at `http://localhost:3001` using the configured local Grafana credentials.
 

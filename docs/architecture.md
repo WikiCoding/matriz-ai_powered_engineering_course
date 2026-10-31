@@ -45,7 +45,7 @@ Spring validation handles request shape and field constraints. Domain/applicatio
 
 ## Authentication, authorization and rate limiting
 
-Keycloak is the only credential and role authority. The gateway's public `POST /api/v1/auth/login` endpoint forwards credentials to Keycloak's token endpoint using the password grant and returns the token response. Its authenticated, Administrator-only `POST /api/v1/auth/register` endpoint uses a narrowly permissioned Keycloak service account to create an identity with a temporary password and assign one realm role, then invokes the User module locally to create the linked local profile and its exactly-one team membership. Domain records reference local profiles linked to Keycloak subjects. No independent application role field may override Keycloak roles.
+Keycloak is the only credential and role authority. The gateway's public `POST /api/v1/auth/login` endpoint forwards credentials to Keycloak's token endpoint using the password grant and returns the token response. Its authenticated, Administrator-only `POST /api/v1/auth/register` endpoint uses a narrowly permissioned Keycloak service account to create an email-verified identity with a directly usable password and assign one realm role, then invokes the User module locally to create the linked local profile and its exactly-one team membership. Domain records reference local profiles linked to Keycloak subjects. No independent application role field may override Keycloak roles.
 
 The backend derives owner/author from verified authentication and checks project access for every task, assignment and comment operation. UI navigation/hidden actions are not authorization. All Project Managers and Software Engineers have access to all projects. Assignment requires a Software Engineer in the project team; moving a user removes old-team assignments atomically. Administrators cannot access project/task content; they manage accounts, roles and teams.
 
@@ -87,7 +87,7 @@ Local Compose should start the full approved service set with persistent applica
 
 ## Approved session and migration decisions
 
-Administrators deliver temporary passwords in person. Keycloak requires password change at first login and enforces an absolute session maximum of eight hours; reauthentication is required afterward. Access tokens have a separate lifetime. The delegated settings below specify idle time, token storage and immediate logout.
+Administrators deliver passwords in person. New users can log in directly; Keycloak enforces an absolute session maximum of eight hours and reauthentication afterward. Access tokens have a separate lifetime. The delegated settings below specify idle time, token storage and immediate logout.
 
 Flyway is selected over Liquibase for this single-PostgreSQL application: ordered SQL scripts keep schema changes directly reviewable with minimal changelog structure. Spring Boot supports both; the current scope does not require Liquibase's alternative changelog formats.
 
@@ -101,7 +101,7 @@ Sources: [Spring Boot database initialization](https://docs.spring.io/spring-boo
 
 These are selected implementation settings under the user's approval of proposal 6, not pre-existing product requirements.
 
-- Keycloak: minimum password length 15 characters, allow passphrases, reject passwords equal to the username/email. Temporary passwords require change on first login. Enable temporary brute-force lockout after five consecutive failures, with a 15-minute lockout; verify the pinned Keycloak configuration produces this behavior.
+- Keycloak: minimum password length 6 characters, allow passphrases, reject passwords equal to the username/email. New accounts have directly usable passwords and verified email. Enable temporary brute-force lockout after five consecutive failures, with a 15-minute lockout; verify the pinned Keycloak configuration produces this behavior.
 - Absolute session maximum eight hours; idle timeout 30 minutes; access-token lifetime five minutes. Keep SPA tokens only in memory, never localStorage/sessionStorage. Use the configured Keycloak password grant and refresh-token rotation. Reload may restore login through a valid refresh token.
 - Immediate API logout: validate JWT signature, issuer, audience and expiry, then check shared server-side session revocation on every authorized request at the integrated backend HTTP boundary. Key revocation by validated Keycloak session ID, retain it through the maximum remaining session/token lifetime and do not cache a positive authorization across requests. Reject replayed tokens from a revoked session even if their JWT expiry is in the future.
 - Logout records revocation durably in Redis before reporting success, then terminates the Keycloak session. Keycloak logout failure must be reported/retried without re-enabling the locally revoked session. Redis loss or unavailability must never resurrect sessions; use persistence and fail closed, requiring reauthentication when session-state integrity is uncertain. The approved limiter outage response remains 429.

@@ -133,7 +133,7 @@ Verify validation, unauthorized resource access and create/read-back persistence
 
 Verify exactly one team per user; administrator-only provisioning/team administration; zero-or-one Software Engineer assignee enforced under concurrency; Project-Manager-only assignment mutation; Software-Engineer-only comment creation; UUID-only identifiers with no UI identifier fields; physical cascade deletion without orphans; server-zone dd/MM/yyyy HH:mm:ss timestamp formatting; 5 requests/second per IP with Redis and HTTP 429 on limiter outage. Dependency references above refer only to the remaining portions in constraints.md.
 
-Verify mandatory first-login password change, eight-hour absolute session expiry and reauthentication, same-team assignment rejection, atomic old-team unassignment on user moves, shared cross-route/replica rate counters and Redis outage HTTP 429. Migration tests must apply Flyway to an empty PostgreSQL database and upgrade an existing one without losing retained records.
+Verify that newly registered, email-verified users can log in directly with their supplied password, eight-hour absolute session expiry and reauthentication, same-team assignment rejection, atomic old-team unassignment on user moves, shared cross-route/replica rate counters and Redis outage HTTP 429. Migration tests must apply Flyway to an empty PostgreSQL database and upgrade an existing one without losing retained records.
 
 ## Final decision acceptance checks
 

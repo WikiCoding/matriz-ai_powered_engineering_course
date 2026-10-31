@@ -12,7 +12,7 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 - Mockito, Spring Boot/Testcontainers, Jest and Playwright are selected.
 - Availability target is 99.95%; production hosting is deferred. Response-time target is p95 under two seconds. Business audit records are out of scope, and no fixed operational-log retention period is required.
 - D-01: existing schema design and API contracts are approved, subject to the explicit revisions below. The repository contains a logical model, not a detailed physical DDL specification. Completion of detailed module interfaces is now delegated.
-- D-02: Administrators create accounts and communicate temporary passwords in person; password change is mandatory at first login. Keycloak role mapping is in requirements.md. Sessions have an absolute maximum of eight hours, then require login again; access tokens need not last eight hours.
+- D-02: Administrators create accounts and communicate passwords in person. New accounts are email verified and may log in directly with the supplied password; a first-login password change is not required (customer revision 2026-10-31). Keycloak role mapping is in requirements.md. Sessions have an absolute maximum of eight hours, then require login again; access tokens need not last eight hours.
 - D-03: each user belongs to exactly one team; Administrators manage team lifecycle and membership.
 - D-04 (resolved): UUID resource IDs only for projects/tasks; no separate incremental identifiers or visible identifier fields.
 - D-05: zero or one assignee, who must be a Software Engineer in the project's team. Moving a user to another team automatically removes assignments in their old team as part of the move.
@@ -24,6 +24,8 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 - The original 2026-10-29 revision authorized documentation and contract changes. Subsequent implementation requests, including D-15, authorize their stated application scope.
 
 ## Remaining decision register
+
+Registration requires nonblank first and last names (customer revision 2026-10-31). The backend supplies them to Keycloak so the verified account has a complete profile for direct login.
 
 Approvals of proposals 1–8 settle business behavior and delegate technical security/schema/interface completion. Do not reopen delegated implementation details as customer blockers. Production is now explicitly deferred, business audit storage and fixed log retention are out of scope, and the response-time percentile is p95. No unresolved business-rule decision blocks starting local implementation.
 

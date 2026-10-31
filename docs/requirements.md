@@ -58,9 +58,11 @@ Each user has exactly one application role, assigned by an Administrator in Keyc
 
 Project/task UUIDs are internal resource identifiers; omit separate business identifiers and UI identifier fields. Physically cascade project/task deletion to dependent tasks, comments and assignments. Timestamps use the server zone and 24-hour `dd/MM/yyyy HH:mm:ss`. shadcn/ui is permitted. The latest decisions supersede the assignment's previous multiple-assignee baseline.
 
-Administrators communicate temporary credentials in person. Keycloak requires password change at first login; sessions end after an absolute maximum of eight hours and require login again. Access-token lifetime is separate. IP limiting uses a global Redis token bucket per IP across routes/instances, five tokens/second and capacity five. Forwarded IP headers are trusted only from configured proxies; other callers cannot override their source IP. Flyway manages application database migrations.
+Administrators communicate credentials in person. New accounts are email verified and can log in with the supplied password without a first-login password change; sessions end after an absolute maximum of eight hours and require login again. Access-token lifetime is separate. IP limiting uses a global Redis token bucket per IP across routes/instances, five tokens/second and capacity five. Forwarded IP headers are trusted only from configured proxies; other callers cannot override their source IP. Flyway manages application database migrations.
 
 ## Additional approved requirements
+
+Administrator registration requires first and last names. Both are stored in the Keycloak identity and must be nonblank so the new account can complete direct login without a profile-update action.
 
 - **FR-15 Provisioning:** emails are unique without case sensitivity; Keycloak owns identity/email and the application owns team membership. Complete both records before reporting success; reconcile partial failures. Email/profile editing is excluded.
 - **FR-16 Logout:** invalidate the current application session and its API access immediately across replicas. Existing bearer tokens must not bypass session revocation.
