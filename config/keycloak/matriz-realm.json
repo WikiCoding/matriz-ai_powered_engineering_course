@@ -22,9 +22,31 @@
       "directAccessGrantsEnabled": true,
       "redirectUris": ["http://localhost:*/*"],
       "webOrigins": ["+"]
+    },
+    {
+      "clientId": "matriz-provisioning",
+      "name": "Matriz provisioning service",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KEYCLOAK_PROVISIONING_CLIENT_SECRET}",
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true
     }
   ],
   "users": [
+    {
+      "username": "service-account-matriz-provisioning",
+      "enabled": true,
+      "serviceAccountClientId": "matriz-provisioning",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-realm"]
+      }
+    },
     {
       "username": "admin@matriz.local",
       "email": "admin@matriz.local",

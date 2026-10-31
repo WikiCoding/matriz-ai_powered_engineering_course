@@ -7,30 +7,30 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import com.wikicoding.matrizbackend.user.ProfileProvisioning;
 
 @RestController
+@RequestMapping("/api/v1/auth")
 public class AuthenticationController {
     private final WebClient keycloakWebClient;
-    private final com.wikicoding.matrizbackend.user.ProfileProvisioning profiles;
+    private final ProfileProvisioning profiles;
     private final String realm;
     private final String clientId;
     private final String provisioningClientId;
@@ -39,7 +39,7 @@ public class AuthenticationController {
 
     public AuthenticationController(
             @Qualifier("keycloakWebClient") WebClient keycloakWebClient,
-            com.wikicoding.matrizbackend.user.ProfileProvisioning profiles,
+            ProfileProvisioning profiles,
             @Value("${keycloak.realm:matriz}") String realm,
             @Value("${keycloak.client-id:matriz-client}") String clientId,
             @Value("${keycloak.provisioning-client-id:matriz-provisioning}") String provisioningClientId,
@@ -54,7 +54,7 @@ public class AuthenticationController {
         this.jwtDecoder = jwtDecoder;
     }
 
-    @PostMapping(value = {"/api/v1/auth/login"}, consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PostMapping(value = {"login"}, consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<KeycloakTokenResponse> login(@RequestBody LoginRequest request) {
         if (request == null || isBlank(request.username()) || isBlank(request.password())) {
@@ -80,9 +80,9 @@ public class AuthenticationController {
                         .thenReturn(tokens));
     }
 
-    @PostMapping(value = "/api/v1/auth/register", consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PostMapping(value = "register", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<com.wikicoding.matrizbackend.user.ProfileProvisioning.Profile>> register(@AuthenticationPrincipal Jwt administrator,
+    public Mono<ResponseEntity<ProfileProvisioning.Profile>> register(@AuthenticationPrincipal Jwt administrator,
                                                     @RequestBody RegisterRequest request) {
         if (administrator == null) return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!hasAdministratorRole(administrator)) {
@@ -159,7 +159,7 @@ public class AuthenticationController {
 
     private void validateRegistration(RegisterRequest request) {
         if (request == null || isBlank(request.username()) || isBlank(request.email()) || isBlank(request.password())
-                || request.password().length() < 15 || request.teamId() == null
+                || request.password().length() < 6 || request.teamId() == null
                 || !List.of("ADMINISTRATOR", "PROJECT_MANAGER", "SOFTWARE_ENGINEER").contains(request.role())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "username, email, password, role and teamId are required");
         }
@@ -181,7 +181,7 @@ public class AuthenticationController {
         return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "User provisioning failed");
     }
 
-    @PostMapping(value = "/api/v1/auth/logout", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "logout", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> logout(@AuthenticationPrincipal Jwt jwt, @RequestBody LogoutRequest request) {
         if (jwt == null) return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED));

@@ -31,7 +31,7 @@ services:
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/matriz
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/matriz/protocol/openid-connect/certs
       KEYCLOAK_PROVISIONING_CLIENT_ID: ${KEYCLOAK_PROVISIONING_CLIENT_ID:-matriz-provisioning}
-      KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${KEYCLOAK_PROVISIONING_CLIENT_SECRET:-}
+      KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${KEYCLOAK_PROVISIONING_CLIENT_SECRET:-matriz-local-provisioning-secret}
     ports:
       - "127.0.0.1:8080:8080"
     networks:
@@ -47,6 +47,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME: http://localhost:8180
+      KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${KEYCLOAK_PROVISIONING_CLIENT_SECRET:-matriz-local-provisioning-secret}
     volumes:
       - ./config/keycloak:/opt/keycloak/data/import:ro
     ports:
