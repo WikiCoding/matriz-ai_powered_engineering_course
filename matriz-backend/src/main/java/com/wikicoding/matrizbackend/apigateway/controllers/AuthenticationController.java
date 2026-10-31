@@ -170,6 +170,13 @@ public class AuthenticationController {
     private Throwable asProvisioningFailure(Throwable failure) {
         if (failure instanceof ResponseStatusException) return failure;
         if (failure instanceof org.springframework.dao.DataIntegrityViolationException) {
+            for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+                if (cause instanceof org.hibernate.exception.ConstraintViolationException constraint
+                        && "app_user_team_id_fkey".equals(constraint.getConstraintName())) {
+                    return new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "teamId does not reference an existing team");
+                }
+            }
             return new ResponseStatusException(HttpStatus.CONFLICT, "Profile conflicts with existing data or team membership");
         }
         if (failure instanceof WebClientResponseException response) {
