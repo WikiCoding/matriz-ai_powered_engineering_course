@@ -114,9 +114,11 @@ public class AuthenticationController {
 
     private Mono<String> createKeycloakUser(KeycloakTokenResponse token, RegisterRequest request) {
         Map<String, Object> body = Map.of(
-                "username", request.username(), "email", request.email(), "enabled", true,
-                "credentials", List.of(Map.of("type", "password", "value", request.password(), "temporary", true)),
-                "requiredActions", List.of("UPDATE_PASSWORD"));
+                "username", request.username(), "email", request.email(),
+                "firstName", request.firstName().trim(), "lastName", request.lastName().trim(),
+                "emailVerified", true, "enabled", true,
+                "credentials", List.of(Map.of("type", "password", "value", request.password(), "temporary", false)),
+                "requiredActions", List.of());
         return keycloakWebClient.post().uri("/admin/realms/{realm}/users", realm)
                 .headers(headers -> headers.setBearerAuth(token.access_token()))
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(body).exchangeToMono(response -> {
@@ -158,10 +160,12 @@ public class AuthenticationController {
     }
 
     private void validateRegistration(RegisterRequest request) {
-        if (request == null || isBlank(request.username()) || isBlank(request.email()) || isBlank(request.password())
+        if (request == null || isBlank(request.username()) || isBlank(request.email())
+                || isBlank(request.firstName()) || isBlank(request.lastName()) || isBlank(request.password())
                 || request.password().length() < 6 || request.teamId() == null
                 || !List.of("ADMINISTRATOR", "PROJECT_MANAGER", "SOFTWARE_ENGINEER").contains(request.role())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "username, email, password, role and teamId are required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "username, email, firstName, lastName, password, role and teamId are required");
         }
     }
 

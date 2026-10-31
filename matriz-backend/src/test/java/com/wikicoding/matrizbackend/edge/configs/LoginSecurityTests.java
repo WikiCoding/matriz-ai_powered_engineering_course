@@ -97,7 +97,7 @@ class LoginSecurityTests {
         // Act / Assert: execute the workflow and verify responses/state.
         client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
+                .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
                 .exchange().expectStatus().isCreated().expectBody().jsonPath("$.email").isEqualTo("new.user@example.com");
         assertEquals(1, state.createdUsers.get());
         assertEquals(0, state.deletedUsers.get());
@@ -112,13 +112,25 @@ class LoginSecurityTests {
     }
 
     @Test
+    void registrationRejectsMissingNamesBeforeCreatingIdentity() {
+        // Arrange
+        String request = "{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\" \",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}";
+        // Act
+        client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("admin"))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+                .exchange().expectStatus().isBadRequest();
+        // Assert
+        assertEquals(0, state.createdUsers.get());
+    }
+
+    @Test
     void registrationDeletesKeycloakIdentityWhenLocalProfileCreationFails() {
         // Arrange: fixtures and dependency state are reset in resetState().
         state.backendDown.set(true);
         // Act / Assert: execute the workflow and verify responses/state.
         client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
+                .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
                 .exchange().expectStatus().isEqualTo(502);
         assertEquals(1, state.deletedUsers.get());
     }
