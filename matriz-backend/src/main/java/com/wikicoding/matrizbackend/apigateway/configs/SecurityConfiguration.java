@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.edge.configs;
+package com.wikicoding.matrizbackend.apigateway.configs;
 
 import jakarta.servlet.DispatcherType;
 import java.util.List;

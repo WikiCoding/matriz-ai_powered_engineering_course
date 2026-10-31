@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.edge.controllers;
+package com.wikicoding.matrizbackend.apigateway.controllers;
 
 import com.nimbusds.jwt.JWTParser;
 import java.text.ParseException;
@@ -140,7 +140,7 @@ public class AuthenticationController {
                         .retrieve().toBodilessEntity().then()).onErrorMap(this::asProvisioningFailure);
     }
 
-    private Mono<com.wikicoding.matrizbackend.user.ProfileProvisioning.Profile> createLocalProfile(String subject, RegisterRequest request) {
+    private Mono<com.wikicoding.matrizbackend.user.ProfileProvisioning.Profile> createLocalProfile(String subject, com.wikicoding.matrizbackend.apigateway.controllers.RegisterRequest request) {
         return Mono.fromCallable(() -> profiles.create(subject, request.email(), request.teamId()))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }

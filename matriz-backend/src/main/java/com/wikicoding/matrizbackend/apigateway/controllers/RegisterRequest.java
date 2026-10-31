@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.edge.controllers;
+package com.wikicoding.matrizbackend.apigateway.controllers;
 
 import java.util.UUID;
 

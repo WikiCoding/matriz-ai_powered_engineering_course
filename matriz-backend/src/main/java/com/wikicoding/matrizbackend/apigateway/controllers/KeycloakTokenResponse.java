@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.edge.controllers;
+package com.wikicoding.matrizbackend.apigateway.controllers;
 
 public record KeycloakTokenResponse(
         String access_token, String refresh_token, String token_type,

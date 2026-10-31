@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.edge.configs;
+package com.wikicoding.matrizbackend.apigateway.configs;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

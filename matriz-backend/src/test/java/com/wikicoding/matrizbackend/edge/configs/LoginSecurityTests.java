@@ -1,6 +1,6 @@
 package com.wikicoding.matrizbackend.edge.configs;
 
-import com.wikicoding.matrizbackend.edge.controllers.AuthenticationController;
+
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import java.time.Instant;
@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.wikicoding.matrizbackend.apigateway.configs.SecurityConfiguration;
+import com.wikicoding.matrizbackend.apigateway.controllers.AuthenticationController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
