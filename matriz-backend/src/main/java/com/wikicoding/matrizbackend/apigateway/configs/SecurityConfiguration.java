@@ -30,13 +30,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 @Slf4j
 public class SecurityConfiguration {
     private static List<String> csv(String value) {
-        return java.util.Arrays.stream(value.split(",")).map(String::trim).filter(item -> !item.isEmpty()).toList();
+        return Arrays.stream(value.split(",")).map(String::trim).filter(item -> !item.isEmpty()).toList();
     }
 
     @Bean
@@ -71,6 +72,16 @@ public class SecurityConfiguration {
                         .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dashboard")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && (roles.contains("ADMINISTRATOR") || roles.contains("PROJECT_MANAGER")
+                                            || roles.contains("SOFTWARE_ENGINEER"));
+                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                        })
                         .requestMatchers("/api/v1/teams", "/api/v1/teams/**", "/api/v1/users", "/api/v1/users/**")
                         .access((authentication, context) -> {
                             var principal = authentication.get();
