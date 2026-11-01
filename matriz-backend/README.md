@@ -50,3 +50,7 @@ Valid tokens require no backend session registration. Missing, invalid and expir
 ## Dashboard endpoint
 
 `GET /api/v1/dashboard` returns all accessible projects in name/ID order and task totals for `TODO`, `IN_PROGRESS` and `DONE` across the complete project dataset. Project Managers and Software Engineers receive project content; Administrators receive empty projects and zero task counts. The endpoint is authenticated and reads current database state on each request. Focused and module tests could not run in this environment because the Maven wrapper failed to start and the Spring Boot parent dependency was unavailable to installed Maven.
+
+## User/team listings and task assignments
+
+`GET /api/v1/users` and `GET /api/v1/teams` accept zero-based `page` and `size` (default 0 and 20, maximum 100) and return page metadata. Administrator user listings contain completed, active local profiles ordered by email and ID; team listings order by name and ID. Task assignment GET/POST/DELETE routes expose zero or one assignee. POST checks the project team and the current Software Engineer role in Keycloak; the task ID uniqueness constraint protects concurrent assignment. Project Managers mutate assignments and Software Engineers may read them. These paths require focused tests and live identity/database verification before acceptance.

@@ -21,15 +21,15 @@ class TeamControllerTest {
         TeamService service = mock(TeamService.class);
         TeamController controller = new TeamController(service);
         Team team = new Team(UUID.randomUUID(), "Platform");
-        when(service.create("Platform")).thenReturn(team);
+        when(service.createTeam("Platform")).thenReturn(team);
 
         // Act
-        var response = controller.create(new CreateTeamRequest("Platform"));
+        var response = controller.createTeam(new CreateTeamRequest("Platform"));
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isEqualTo(new TeamResponse(team.getId(), "Platform"));
-        verify(service).create("Platform");
+        verify(service).createTeam("Platform");
     }
 
 }

@@ -12,6 +12,8 @@ import com.wikicoding.matrizbackend.apigateway.dtos.KeycloakTokenResponse;
 import com.wikicoding.matrizbackend.apigateway.dtos.LoginRequest;
 import com.wikicoding.matrizbackend.apigateway.dtos.LogoutRequest;
 import com.wikicoding.matrizbackend.apigateway.dtos.RegisterRequest;
+import com.wikicoding.matrizbackend.user.Profile;
+import com.wikicoding.matrizbackend.user.UserAccounts;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,13 +30,12 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
-import com.wikicoding.matrizbackend.user.ProfileProvisioning;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthenticationController {
     private final WebClient keycloakWebClient;
-    private final ProfileProvisioning profiles;
+    private final UserAccounts userService;
     private final String realm;
     private final String clientId;
     private final String provisioningClientId;
@@ -43,14 +44,14 @@ public class AuthenticationController {
 
     public AuthenticationController(
             @Qualifier("keycloakWebClient") WebClient keycloakWebClient,
-            ProfileProvisioning profiles,
+            UserAccounts userService,
             @Value("${keycloak.realm:matriz}") String realm,
             @Value("${keycloak.client-id:matriz-client}") String clientId,
             @Value("${keycloak.provisioning-client-id:matriz-provisioning}") String provisioningClientId,
             @Value("${keycloak.provisioning-client-secret:}") String provisioningClientSecret,
             ReactiveJwtDecoder jwtDecoder) {
         this.keycloakWebClient = keycloakWebClient;
-        this.profiles = profiles;
+        this.userService = userService;
         this.realm = realm;
         this.clientId = clientId;
         this.provisioningClientId = provisioningClientId;
@@ -86,8 +87,8 @@ public class AuthenticationController {
 
     @PostMapping(value = "register", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<ProfileProvisioning.Profile>> register(@AuthenticationPrincipal Jwt administrator,
-                                                    @RequestBody RegisterRequest request) {
+    public Mono<ResponseEntity<Profile>> register(@AuthenticationPrincipal Jwt administrator,
+                                                  @RequestBody RegisterRequest request) {
         if (administrator == null) return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!hasAdministratorRole(administrator)) {
             return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN));
@@ -146,8 +147,8 @@ public class AuthenticationController {
                         .retrieve().toBodilessEntity().then()).onErrorMap(this::asProvisioningFailure);
     }
 
-    private Mono<com.wikicoding.matrizbackend.user.ProfileProvisioning.Profile> createLocalProfile(String subject, RegisterRequest request) {
-        return Mono.fromCallable(() -> profiles.create(subject, request.email(), request.teamId()))
+    private Mono<Profile> createLocalProfile(String subject, RegisterRequest request) {
+        return Mono.fromCallable(() -> userService.createUser(subject, request.email(), request.teamId()))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }
 

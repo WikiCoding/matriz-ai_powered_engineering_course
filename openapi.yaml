@@ -53,6 +53,7 @@ paths:
       tags: [Users]
       summary: List users
       operationId: listUsers
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
       responses: {'200': {$ref: '#/components/responses/UserList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     post:
       tags: [Users]
@@ -78,6 +79,7 @@ paths:
       tags: [Teams]
       summary: List accessible teams
       operationId: listTeams
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
       responses: {'200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
   /api/v1/projects:
     get:
@@ -209,7 +211,7 @@ components:
     User:
       type: object
       required: [id, email]
-      properties: {id: {type: string, format: uuid}, email: {type: string, format: email}, displayName: {type: string}, role: {$ref: '#/components/schemas/Role'}}
+      properties: {id: {type: string, format: uuid}, email: {type: string, format: email}, teamId: {type: string, format: uuid}, displayName: {type: string}, role: {$ref: '#/components/schemas/Role'}}
     UserCreate:
       type: object
       required: [email, role, teamId]
@@ -256,8 +258,8 @@ components:
     Team: {description: Team, content: {application/json: {schema: {$ref: '#/components/schemas/Team'}}}}
     Conflict: {description: Duplicate email or assignment, or second assignee, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     User: {description: User, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
-    UserList: {description: User list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/User'}}}}}
-    TeamList: {description: Team list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Team'}}}}}
+    UserList: {description: Paginated users ordered by email then ID, content: {application/json: {schema: {type: object, required: [content, totalElements, totalPages, number, size], properties: {content: {type: array, items: {$ref: '#/components/schemas/User'}}, totalElements: {type: integer, format: int64}, totalPages: {type: integer}, number: {type: integer}, size: {type: integer}}}}}}
+    TeamList: {description: Paginated teams ordered by name then ID, content: {application/json: {schema: {type: object, required: [content, totalElements, totalPages, number, size], properties: {content: {type: array, items: {$ref: '#/components/schemas/Team'}}, totalElements: {type: integer, format: int64}, totalPages: {type: integer}, number: {type: integer}, size: {type: integer}}}}}}
     Project: {description: Project, content: {application/json: {schema: {$ref: '#/components/schemas/Project'}}}}
     ProjectList:
       description: Projects ordered by name ascending, then ID ascending

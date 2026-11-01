@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.wikicoding.matrizbackend.apigateway.configs.SecurityConfiguration;
 import com.wikicoding.matrizbackend.apigateway.controllers.AuthenticationController;
+import com.wikicoding.matrizbackend.user.Profile;
+import com.wikicoding.matrizbackend.user.UserAccounts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +37,13 @@ import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import com.wikicoding.matrizbackend.user.ProfileProvisioning;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @WebAppConfiguration
 @SpringJUnitConfig(classes = {SecurityConfiguration.class, LoginSecurityTests.TestConfiguration.class})
@@ -311,10 +315,10 @@ class LoginSecurityTests {
                 return Mono.just(ClientResponse.create(HttpStatus.OK).header("Content-Type", "application/json")
                         .body("{\"access_token\":\"valid\",\"token_type\":\"Bearer\"}").build());
             }).build();
-            var profiles = mock(ProfileProvisioning.class);
-            when(profiles.create(anyString(), anyString(), any())).thenAnswer(call -> {
+            var profiles = mock(UserAccounts.class);
+            when(profiles.createUser(anyString(), anyString(), any())).thenAnswer(call -> {
                 if (state.backendDown.get()) throw new IllegalStateException("Local persistence unavailable");
-                return new ProfileProvisioning.Profile(java.util.UUID.randomUUID(), "new.user@example.com");
+                return new Profile(java.util.UUID.randomUUID(), "new.user@example.com");
             });
             return new AuthenticationController(client, profiles, "matriz", "matriz-client", "matriz-provisioning",
                     "test-provisioning-secret", decoder);

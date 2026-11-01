@@ -1,7 +1,7 @@
 package com.wikicoding.matrizbackend.apigateway.controllers;
 
 import com.wikicoding.matrizbackend.apigateway.dtos.TeamIds;
-import com.wikicoding.matrizbackend.user.UserManagement;
+import com.wikicoding.matrizbackend.user.UserAccounts;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/users/{userId}")
 @RequiredArgsConstructor
 public class UserAdministrationController {
-    private final UserManagement userManagement;
+    private final UserAccounts userService;
 
     @GetMapping("/team-memberships")
     public TeamIds membership(@PathVariable UUID userId) {
-        return new TeamIds(List.of(userManagement.requireActive(userId).teamId()));
+        return new TeamIds(List.of(userService.requireActiveTeamId(userId)));
     }
 }
