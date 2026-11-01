@@ -1,17 +1,31 @@
 package com.wikicoding.matrizbackend.apigateway.configs;
 
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
@@ -19,6 +33,7 @@ import reactor.core.scheduler.Schedulers;
 
 @Configuration
 @EnableWebSecurity
+@Slf4j
 public class SecurityConfiguration {
     private static List<String> csv(String value) {
         return java.util.Arrays.stream(value.split(",")).map(String::trim).filter(item -> !item.isEmpty()).toList();
@@ -46,18 +61,42 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+    SecurityFilterChain securityFilterChain(HttpSecurity http) {
+        return http.csrf(AbstractHttpConfigurer::disable)
+                .addFilterBefore(requestLoggingFilter(), AnonymousAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .requestCache(cache -> cache.disable())
+                .requestCache(RequestCacheConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/v1/teams", "/api/v1/teams/**")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean administrator = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && roles.contains("ADMINISTRATOR");
+                            return new org.springframework.security.authorization.AuthorizationDecision(administrator);
+                        })
                         .anyRequest().authenticated())
                 .cors(cors -> {})
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))
                 .build();
+    }
+
+    private OncePerRequestFilter requestLoggingFilter() {
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+                                            @NonNull FilterChain chain) throws ServletException, IOException {
+                try {
+                    chain.doFilter(request, response);
+                } finally {
+                    log.info("HTTP {} {} -> {}", request.getMethod(), request.getRequestURI(), response.getStatus());
+                }
+            }
+        };
     }
 }

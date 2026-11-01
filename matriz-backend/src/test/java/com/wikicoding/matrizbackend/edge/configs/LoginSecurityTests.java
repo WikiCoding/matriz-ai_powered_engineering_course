@@ -146,6 +146,21 @@ class LoginSecurityTests {
     }
 
     @Test
+    void teamRoutesRequireAdministratorAtEdge() {
+        // Arrange
+        var teamPath = "/api/v1/teams/" + java.util.UUID.randomUUID();
+
+        // Act / Assert
+        client.get().uri("/api/v1/teams").exchange().expectStatus().isUnauthorized();
+        client.get().uri("/api/v1/teams").headers(h -> h.setBearerAuth("valid"))
+                .exchange().expectStatus().isForbidden();
+        client.delete().uri(teamPath).headers(h -> h.setBearerAuth("valid"))
+                .exchange().expectStatus().isForbidden();
+        client.get().uri("/api/v1/teams").headers(h -> h.setBearerAuth("admin"))
+                .exchange().expectStatus().isNotFound();
+    }
+
+    @Test
     void logoutLeavesIssuedTokensUsableUntilExpiry() {
         // Arrange: provider succeeds and tokens are valid.
         // Act
