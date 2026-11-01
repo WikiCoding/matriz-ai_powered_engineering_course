@@ -17,6 +17,6 @@ class ModuleStructureTests {
 
         // Assert
         assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
-                .containsExactlyInAnyOrder("user", "team", "projectmanagement", "edge");
+                .containsExactlyInAnyOrder("user", "team", "projectmanagement", "apigateway");
     }
 }

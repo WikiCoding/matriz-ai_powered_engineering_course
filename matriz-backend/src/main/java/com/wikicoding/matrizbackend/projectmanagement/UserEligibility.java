@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.user;
+package com.wikicoding.matrizbackend.projectmanagement;
 
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.apigateway.dtos;
+package com.wikicoding.matrizbackend.user.dtos;
 
 import java.util.UUID;
 

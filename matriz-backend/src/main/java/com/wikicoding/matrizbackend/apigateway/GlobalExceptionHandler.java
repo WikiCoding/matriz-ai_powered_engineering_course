@@ -1,7 +1,5 @@
 package com.wikicoding.matrizbackend.apigateway;
 
-import com.wikicoding.matrizbackend.apigateway.controllers.AuthenticationController;
-import com.wikicoding.matrizbackend.apigateway.controllers.UserAdministrationController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,7 +7,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Maps gateway controller failures to the existing API error envelope. */
-@RestControllerAdvice(assignableTypes = {AuthenticationController.class, UserAdministrationController.class})
+@RestControllerAdvice(basePackages = {"com.wikicoding.matrizbackend.apigateway.controllers",
+        "com.wikicoding.matrizbackend.user.controllers"})
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)

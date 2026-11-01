@@ -6,7 +6,7 @@ import com.wikicoding.matrizbackend.projectmanagement.persistence.task.TaskDataM
 import com.wikicoding.matrizbackend.projectmanagement.persistence.task.TaskRepository;
 import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentDataModel;
 import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentRepository;
-import com.wikicoding.matrizbackend.user.UserEligibility;
+import com.wikicoding.matrizbackend.projectmanagement.UserEligibility;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -32,6 +32,7 @@ class AssignmentServiceTest {
         TaskDataModel task = mock(TaskDataModel.class);
         when(task.getProjectId()).thenReturn(projectId);
         when(tasks.findById(taskId)).thenReturn(Optional.of(task));
+        when(tasks.existsById(taskId)).thenReturn(true);
     }
 
     @Test

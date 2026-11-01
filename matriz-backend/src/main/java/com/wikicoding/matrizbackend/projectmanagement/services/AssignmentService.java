@@ -4,7 +4,7 @@ import com.wikicoding.matrizbackend.projectmanagement.persistence.project.Projec
 import com.wikicoding.matrizbackend.projectmanagement.persistence.task.TaskRepository;
 import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentDataModel;
 import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentRepository;
-import com.wikicoding.matrizbackend.user.UserEligibility;
+import com.wikicoding.matrizbackend.projectmanagement.UserEligibility;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

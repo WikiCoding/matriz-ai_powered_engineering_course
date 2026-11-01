@@ -20,7 +20,7 @@ The existing POM pins Spring Modulith 2.1.1, while `docs/architecture.md` record
 
 ## Integrated HTTP edge
 
-The customer requested one Java deployment unit (D-15). The `edge` infrastructure module now hosts the former gateway authentication controllers, CORS, JWT validation and Redis session revocation. Spring MVC remains the HTTP server; no Spring Cloud Gateway process or HTTP backend self-call is required. Administrator registration invokes `user.ProfileProvisioning` locally after Keycloak identity/role creation and compensates failures by deleting that new identity. Durable reconciliation remains outstanding.
+The customer requested one Java deployment unit (D-15). The `edge` infrastructure module now hosts the former gateway authentication controllers, CORS, JWT validation and Redis session revocation. Spring MVC remains the HTTP server; no Spring Cloud Gateway process or HTTP backend self-call is required. Administrator account creation at `POST /api/v1/users` invokes the User module after Keycloak identity/role creation and compensates a reported local failure by deleting that new identity. Provisioning retry/reconciliation after interrupted requests is still required by the requirements and is not implemented here.
 
 The application listens on `SERVER_PORT` (default 8080). Configure `KEYCLOAK_URL`, `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_JWK_SET_URI`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, and the existing `KEYCLOAK_PROVISIONING_CLIENT_ID` / `KEYCLOAK_PROVISIONING_CLIENT_SECRET`. The provisioning service account must already be configured in Keycloak. `REDIS_HOST` and `REDIS_PORT` select the shared limiter/session store. `CORS_ALLOWED_ORIGIN_PATTERNS`, `CORS_ALLOWED_METHODS`, and `CORS_ALLOWED_HEADERS` retain the local defaults.
 
@@ -38,7 +38,7 @@ Run `./mvnw verify` (Windows: `.\mvnw.cmd verify`) with Docker available for Pos
 - An isolated Compose project built the image and ran backend, PostgreSQL, Redis and Keycloak. Live checks: health 200, anonymous protected access 401, invalid login 401, successful login 200, authenticated metrics 200, logout 204, access-token replay 401. A concurrent 12-request burst with different spoofed forwarding headers admitted five requests and rejected seven with 429. The sequential localhost probe was too slow to exhaust the bucket; the concurrent direct-loopback probe verified the intended burst.
 - Temporary containers/networks/data volumes were removed. Existing working-tree changes and persistent application data were preserved. Diff whitespace validation passed.
 
-Live registration still requires the pre-existing provisioning service-account setup; registration authorization/compensation was tested with simulated Keycloak, and profile persistence with real PostgreSQL. UI journeys, Keycloak back-channel logout, durable provisioning reconciliation, live multi-replica logout/crash recovery and telemetry delivery are not claimed as verified by this consolidation.
+The historical live registration check required provisioning service-account setup; The historical registration authorization/compensation check used simulated Keycloak, and profile persistence used real PostgreSQL. UI journeys, Keycloak back-channel logout, durable provisioning reconciliation, live multi-replica logout/crash recovery and telemetry delivery are not claimed as verified by this consolidation.
 
 
 ## Superseding decision D-16 (2026-10-30)

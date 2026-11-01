@@ -11,8 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.wikicoding.matrizbackend.apigateway.configs.SecurityConfiguration;
 import com.wikicoding.matrizbackend.apigateway.controllers.AuthenticationController;
+import com.wikicoding.matrizbackend.user.controllers.UsersController;
 import com.wikicoding.matrizbackend.user.Profile;
 import com.wikicoding.matrizbackend.user.UserAccounts;
+import com.wikicoding.matrizbackend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +101,7 @@ class LoginSecurityTests {
     void administratorRegistrationCreatesIdentityRoleAndLocalProfile() {
         // Arrange: fixtures and dependency state are reset in resetState().
         // Act / Assert: execute the workflow and verify responses/state.
-        client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("admin"))
+        client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
                 .exchange().expectStatus().isCreated().expectBody().jsonPath("$.email").isEqualTo("new.user@example.com");
@@ -111,7 +113,7 @@ class LoginSecurityTests {
     void registrationRejectsNonAdministrators() {
         // Arrange: fixtures and dependency state are reset in resetState().
         // Act / Assert: execute the workflow and verify responses/state.
-        client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("valid"))
+        client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("valid"))
                 .contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isForbidden();
     }
 
@@ -135,7 +137,7 @@ class LoginSecurityTests {
         // Arrange
         String request = "{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\" \",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}";
         // Act
-        client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("admin"))
+        client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isBadRequest();
         // Assert
@@ -147,7 +149,7 @@ class LoginSecurityTests {
         // Arrange: fixtures and dependency state are reset in resetState().
         state.backendDown.set(true);
         // Act / Assert: execute the workflow and verify responses/state.
-        client.post().uri("/api/v1/auth/register").headers(h -> h.setBearerAuth("admin"))
+        client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
                 .exchange().expectStatus().isEqualTo(502);
@@ -288,8 +290,8 @@ class LoginSecurityTests {
             return token -> { if (token.equals("invalid")) throw new BadJwtException("Invalid token"); return jwt(token); };
         }
         @Bean
-        AuthenticationController authenticationController(TestState state, ReactiveJwtDecoder decoder) {
-            var client = WebClient.builder().exchangeFunction(request -> {
+        WebClient keycloakWebClient(TestState state) {
+            return WebClient.builder().exchangeFunction(request -> {
                 if (request.url().getPath().contains("/admin/") && request.url().getPath().endsWith("/users")
                         && request.method().name().equals("POST")) {
                     state.createdUsers.incrementAndGet();
@@ -315,13 +317,26 @@ class LoginSecurityTests {
                 return Mono.just(ClientResponse.create(HttpStatus.OK).header("Content-Type", "application/json")
                         .body("{\"access_token\":\"valid\",\"token_type\":\"Bearer\"}").build());
             }).build();
+        }
+        @Bean
+        UserAccounts userAccounts(TestState state) {
             var profiles = mock(UserAccounts.class);
             when(profiles.createUser(anyString(), anyString(), any())).thenAnswer(call -> {
                 if (state.backendDown.get()) throw new IllegalStateException("Local persistence unavailable");
                 return new Profile(java.util.UUID.randomUUID(), "new.user@example.com");
             });
-            return new AuthenticationController(client, profiles, "matriz", "matriz-client", "matriz-provisioning",
-                    "test-provisioning-secret", decoder);
+            return profiles;
+        }
+        @Bean
+        AuthenticationController authenticationController(WebClient keycloakWebClient, ReactiveJwtDecoder decoder) {
+            return new AuthenticationController(keycloakWebClient, "matriz", "matriz-client", decoder);
+        }
+        @Bean
+        UserService userService() { return mock(UserService.class); }
+        @Bean
+        UsersController usersController(UserService userService, WebClient keycloakWebClient, UserAccounts userAccounts) {
+            return new UsersController(userService, keycloakWebClient, userAccounts, "matriz", "matriz-provisioning",
+                    "test-provisioning-secret");
         }
     }
 }
