@@ -51,7 +51,7 @@ Approvals of proposals 1–8 settle business behavior and delegate technical sec
 
 ## Scope and evidence
 
-MVP: login/logout/profile, projects/tasks with physical deletion, zero-or-one Software Engineer assignee, comments, project-name search, paginated/sorted listings, task status/priority filters and home task counts; administrator user/team creation and viewing, with role/team assignment at user creation. Backlogs, Kanban, general analytics, external integrations, public registration and password recovery remain outside scope.
+MVP: login/logout/profile, projects/tasks with physical deletion, zero-or-one Software Engineer assignee, comments, paginated/sorted listings, task status/priority filters and home task counts; administrator user/team creation and viewing, with role/team assignment at user creation. Backlogs, Kanban, general analytics, external integrations, public registration and password recovery remain outside scope.
 
 The API baseline in openapi.yaml predates the approved pagination/list-sorting change and must be revised before implementation. The PNG wireframe predates the single-assignee and pagination/list-sorting decisions and is illustrative only; current textual design notes take precedence. No attachment was available for this update; role mapping uses the user instructions and existing Markdown requirements.
 
@@ -74,3 +74,7 @@ The customer clarified that user and team updates and deletion were not requeste
 - Failed account-creation compensation and provisioning retry/reconciliation remain required; these are not an account-deletion feature. No replacement deactivation, archival or administrative correction workflow is introduced.
 
 This approval covers documentation and OpenAPI alignment now. Application code, migrations and implementation tests are unchanged by this refactor; their alignment is not verified or claimed.
+
+## D-18 — Project-name search scope correction (2026-11-01)
+
+The customer did not request project-name search in the source assignment, so it is removed from the MVP. Project listing remains paginated and alphabetically sorted. The old wireframe prompt and PNG are historical illustrations and do not authorize a search control. No backend search route or query is required.

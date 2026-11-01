@@ -6,7 +6,7 @@
 
 1. Sign in: email/password authentication and expired-session feedback. Authentication is Keycloak-owned; the panel represents the login experience, not an independent application password store.
 2. Home: authenticated profile/sign-out, accessible projects and task counts by status.
-3. Projects: name search, paginated alphabetical-by-name list and create/edit form with team and read-only owner.
+3. Projects: paginated alphabetical-by-name list and create/edit form with team and read-only owner.
 4. Project detail: project metadata, edit/delete actions, task creation, status/priority filters, creation-date sorting, a paginated task table and zero or one Software Engineer assignee.
 5. Task detail/edit: title, description, status, priority, effort, derived team, read-only timestamps, a single optional assignee selector/removal control and comments with author/date. Posting a comment has its own action, separate from saving task edits.
 6. Shared patterns: delete confirmation, loading/empty/success/error feedback, disabled pending action, compact mobile navigation and task card.
@@ -30,4 +30,4 @@ Edited with the built-in image-generation tool from the previous wireframe, then
 
 ## Latest decision precedence
 
-The PNG has not been regenerated and may show multiple assignees, older dates, or list controls that predate pagination/sorting. These notes and requirements.md take precedence. Physical deletion is confirmed; dependent tasks, comments and assignments are deleted, preserving users and teams. shadcn/ui is an approved UI option.
+The PNG has not been regenerated and may show project-name search, multiple assignees, older dates, or list controls that predate pagination/sorting. Project-name search is out of scope; these notes and requirements.md take precedence. Physical deletion is confirmed; dependent tasks, comments and assignments are deleted, preserving users and teams. shadcn/ui is an approved UI option.

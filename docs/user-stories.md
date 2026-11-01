@@ -33,13 +33,13 @@ As a user, I want a complete authenticated session.
 
 Verify both UI and direct API requests, including session and token replay after logout.
 
-## US-02.1 — Create, find and edit accessible projects
+## US-02.1 — Create, list and edit accessible projects
 
 As a Project Manager, I want to manage projects I am authorized to access.
 
 1. A valid project has a unique identifier, name, description according to the adopted contract, one team and an owner derived from the authenticated creator.
 2. Names shorter than 3 or longer than 100 characters, whitespace-only names and descriptions longer than 1000 characters are rejected.
-3. Lists and name searches return only accessible projects. Another user's identifier does not bypass authorization.
+3. Lists return only accessible projects. Another user's identifier does not bypass authorization.
 4. Authorized changes persist after reload and backend restart; changing the project team changes every task's displayed team.
 
 Technical contract completion is delegated under D-01. Use UUIDs only; all Project Managers and Software Engineers have project access.

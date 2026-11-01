@@ -39,7 +39,7 @@ Tasks may be saved unassigned. Each user belongs to exactly one team. All Projec
 - Task effort: `1, 2, 3, 5, 8, 13`; status: `TODO`, `IN_PROGRESS`, `DONE`, default `TODO`; priority: `LOW`, `MEDIUM`, `HIGH`, default `MEDIUM`.
 - Backend determines project owner, comment author and timestamps. Render API/display timestamps in the server timezone using `dd/MM/yyyy HH:mm:ss` (24-hour clock).
 - Deletion replaces the previous archival-only restriction. Physically cascade project deletion through tasks to comments/assignments, and task deletion to comments/assignment. Preserve referenced users and teams. Enforce referential integrity.
-- No stored task team, status-count entity or search entity is needed: these are derived queries over authorized data. Index selection follows the approved query contract.
+- No stored task team or status-count entity is needed: these are derived queries over authorized data. Index selection follows the approved query contract.
 
 ## Superseded draft and migration considerations
 
@@ -57,7 +57,7 @@ Dedicated business audit records are out of scope following the revocation of NF
 
 Prior implementation documentation recorded a deleted-profile marker and anonymization support. D-17 removes these from the target logical model and removes the “Deleted user” read-model requirement. This documentation-only revision does not modify or verify existing migrations or application behavior; physical-schema alignment remains implementation work. No data cleanup or migration is authorized by this documentation refactor.
 
-Task assignment uses task ID as its primary key plus explicit pair uniqueness. Project/task deletion cascades to dependent content, while user/team references restrict deletion. Text checks, effort/status/priority checks and defaults enforce the approved data constraints. Timestamps use PostgreSQL `TIMESTAMP WITH TIME ZONE`. Foreign-key/query indexes support lookups, filters and cascades; substring project-name search remains a query implementation concern.
+Task assignment uses task ID as its primary key plus explicit pair uniqueness. Project/task deletion cascades to dependent content, while user/team references restrict deletion. Text checks, effort/status/priority checks and defaults enforce the approved data constraints. Timestamps use PostgreSQL `TIMESTAMP WITH TIME ZONE`. Foreign-key/query indexes support lookups, filters and cascades. Project-name search was not requested and is out of scope.
 
 Only `V1__initial_schema.sql` is required. The application does not use Spring Modulith's persistent event-publication registry, so no `event_publication` table is created. Dedicated audit storage is also omitted because NFR-11 was revoked.
 

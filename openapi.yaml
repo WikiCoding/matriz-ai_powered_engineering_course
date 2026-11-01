@@ -198,7 +198,6 @@ components:
     UserId: {name: userId, in: path, required: true, schema: {type: string, format: uuid}}
     ProjectId: {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
     TaskId: {name: taskId, in: path, required: true, schema: {type: string, format: uuid}}
-    Search: {name: search, in: query, schema: {type: string, maxLength: 100}}
     Page: {name: page, in: query, description: Zero-based page index, schema: {type: integer, minimum: 0, default: 0}}
     Size: {name: size, in: query, description: Items per page, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
     StatusFilter: {name: status, in: query, schema: {$ref: '#/components/schemas/Status'}}

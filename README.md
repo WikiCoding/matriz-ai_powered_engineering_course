@@ -4,7 +4,7 @@ Matriz is an English-language application for approximately 500 Project Managers
 
 ## Revised MVP
 
-The customer adopted Practical Assignment 03 on 2026-10-29. The MVP includes login/logout and profile, accessible project and task management with deletion, zero or one Software Engineer assignee, comments, priority, project-name search, paginated/sorted listings, task filters and a home panel with task counts. Administrators create and view users and teams, assigning one role and one team when creating each user; backend authorization combines roles with project access. Remaining policy and production acceptance details are listed in the decision register.
+The customer adopted Practical Assignment 03 on 2026-10-29. The MVP includes login/logout and profile, accessible project and task management with deletion, zero or one Software Engineer assignee, comments, priority, paginated/sorted listings, task filters and a home panel with task counts. Administrators create and view users and teams, assigning one role and one team when creating each user; backend authorization combines roles with project access. Remaining policy and production acceptance details are listed in the decision register.
 
 User/team updates and deletion were not requested and are outside scope, including post-creation role and membership changes. Comments support creation/reading only and are removed only by project/task deletion cascades. See D-17 in [constraints](docs/constraints.md). This documentation/API revision does not establish implementation alignment.
 
