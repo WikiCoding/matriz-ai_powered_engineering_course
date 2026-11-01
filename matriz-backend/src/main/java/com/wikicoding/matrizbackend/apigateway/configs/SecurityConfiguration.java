@@ -90,6 +90,16 @@ public class SecurityConfiguration {
                                             && roles.contains("SOFTWARE_ENGINEER")));
                             return new org.springframework.security.authorization.AuthorizationDecision(allowed);
                         })
+                        .requestMatchers("/api/v1/projects/*/tasks", "/api/v1/tasks", "/api/v1/tasks/*")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && (roles.contains("PROJECT_MANAGER") || (HttpMethod.GET.matches(context.getRequest().getMethod())
+                                            && roles.contains("SOFTWARE_ENGINEER")));
+                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                        })
                         .anyRequest().authenticated())
                 .cors(cors -> {})
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))

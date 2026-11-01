@@ -1,9 +1,9 @@
 package com.wikicoding.matrizbackend.projectmanagement.services;
 
-import com.wikicoding.matrizbackend.projectmanagement.persistence.ProjectDataModel;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.project.ProjectDataModel;
 import com.wikicoding.matrizbackend.projectmanagement.ProjectOwnerLookup;
-import com.wikicoding.matrizbackend.projectmanagement.persistence.ProjectRepository;
-import com.wikicoding.matrizbackend.projectmanagement.persistence.TaskAssignmentRepository;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.project.ProjectRepository;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentRepository;
 import com.wikicoding.matrizbackend.projectmanagement.ProjectTeamLookup;
 import java.util.Optional;
 import java.util.UUID;

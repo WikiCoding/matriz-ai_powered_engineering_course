@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.projectmanagement.domain;
+package com.wikicoding.matrizbackend.projectmanagement.domain.task;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -57,15 +57,4 @@ public class Task {
         return value;
     }
 
-    public enum Status {
-        TODO,
-        IN_PROGRESS,
-        DONE
-    }
-
-    public enum Priority {
-        LOW,
-        MEDIUM,
-        HIGH
-    }
 }

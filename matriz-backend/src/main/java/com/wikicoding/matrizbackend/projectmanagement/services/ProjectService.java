@@ -1,11 +1,11 @@
 package com.wikicoding.matrizbackend.projectmanagement.services;
 
-import com.wikicoding.matrizbackend.projectmanagement.domain.Project;
+import com.wikicoding.matrizbackend.projectmanagement.domain.project.Project;
 import com.wikicoding.matrizbackend.projectmanagement.ProjectOwnerLookup;
 import com.wikicoding.matrizbackend.projectmanagement.ProjectTeamLookup;
-import com.wikicoding.matrizbackend.projectmanagement.persistence.ProjectDataModel;
-import com.wikicoding.matrizbackend.projectmanagement.persistence.ProjectRepository;
-import com.wikicoding.matrizbackend.projectmanagement.persistence.TaskAssignmentRepository;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.project.ProjectDataModel;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.project.ProjectRepository;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentRepository;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

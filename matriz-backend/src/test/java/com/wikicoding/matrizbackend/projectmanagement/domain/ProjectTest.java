@@ -1,5 +1,6 @@
 package com.wikicoding.matrizbackend.projectmanagement.domain;
 
+import com.wikicoding.matrizbackend.projectmanagement.domain.project.Project;
 import org.junit.jupiter.api.Test;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 

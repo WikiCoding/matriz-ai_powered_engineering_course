@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.projectmanagement.domain;
+package com.wikicoding.matrizbackend.projectmanagement.domain.project;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

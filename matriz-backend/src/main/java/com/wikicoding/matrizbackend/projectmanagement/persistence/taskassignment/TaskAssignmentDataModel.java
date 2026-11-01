@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.projectmanagement.persistence;
+package com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

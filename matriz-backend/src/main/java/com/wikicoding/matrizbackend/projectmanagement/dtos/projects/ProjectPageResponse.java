@@ -1,6 +1,6 @@
 package com.wikicoding.matrizbackend.projectmanagement.dtos.projects;
 
-import com.wikicoding.matrizbackend.projectmanagement.domain.Project;
+import com.wikicoding.matrizbackend.projectmanagement.domain.project.Project;
 import java.util.List;
 import org.springframework.data.domain.Page;
 

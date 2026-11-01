@@ -151,12 +151,13 @@ paths:
       tags: [Tasks]
       summary: List project tasks with status and priority filters
       operationId: listProjectTasks
-      parameters: [{ $ref: '#/components/parameters/StatusFilter' }, { $ref: '#/components/parameters/PriorityFilter' }]
+      parameters: [{ $ref: '#/components/parameters/StatusFilter' }, { $ref: '#/components/parameters/PriorityFilter' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
       responses: {'200': {$ref: '#/components/responses/TaskList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/v1/tasks:
     post:
       tags: [Tasks]
       summary: Create task in an accessible project
-      operationId: createProjectTask
+      operationId: createTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskCreate'}}}}
       responses: {'201': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/tasks/{taskId}:
@@ -265,8 +266,8 @@ components:
       allOf: [{$ref: '#/components/schemas/ProjectCreate'}, {type: object, required: [id, ownerId], properties: {id: {type: string, format: uuid}, ownerId: {type: string, format: uuid, readOnly: true}}}]
     TaskCreate:
       type: object
-      required: [title, description, effort]
-      properties: {title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}}
+      required: [projectId, title, description, effort]
+      properties: {projectId: {type: string, format: uuid}, title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}}
     TaskUpdate:
       type: object
       properties: {title: {type: string, minLength: 3, maxLength: 150}, description: {type: string, maxLength: 2000}, effort: {type: integer, enum: [1, 2, 3, 5, 8, 13]}, status: {$ref: '#/components/schemas/Status'}, priority: {$ref: '#/components/schemas/Priority'}, projectId: {type: string, format: uuid}}
@@ -299,7 +300,7 @@ components:
               number: {type: integer, minimum: 0}
               size: {type: integer, minimum: 1}
     Task: {description: Task, content: {application/json: {schema: {$ref: '#/components/schemas/Task'}}}}
-    TaskList: {description: Task list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Task'}}}}}
+    TaskList: {description: Paginated task list ordered by creation date descending and ID ascending, content: {application/json: {schema: {type: object, required: [content, totalElements, totalPages, number, size], properties: {content: {type: array, items: {$ref: '#/components/schemas/Task'}}, totalElements: {type: integer, format: int64}, totalPages: {type: integer}, number: {type: integer}, size: {type: integer}}}}}}
     Assignment: {description: Assignment, content: {application/json: {schema: {$ref: '#/components/schemas/Assignment'}}}}
     AssignmentList: {description: Zero or one Software Engineer assignment, content: {application/json: {schema: {type: array, maxItems: 1, items: {$ref: '#/components/schemas/Assignment'}}}}}
     Comment: {description: Comment, content: {application/json: {schema: {$ref: '#/components/schemas/Comment'}}}}

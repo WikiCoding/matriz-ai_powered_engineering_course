@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.projectmanagement.persistence;
+package com.wikicoding.matrizbackend.projectmanagement.persistence.project;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

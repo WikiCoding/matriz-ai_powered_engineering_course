@@ -1,6 +1,6 @@
 package com.wikicoding.matrizbackend.projectmanagement;
 
-import com.wikicoding.matrizbackend.projectmanagement.persistence.TaskAssignmentRepository;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.taskassignment.TaskAssignmentRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

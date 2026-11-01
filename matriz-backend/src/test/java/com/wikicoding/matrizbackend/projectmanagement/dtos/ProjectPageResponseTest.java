@@ -2,7 +2,7 @@ package com.wikicoding.matrizbackend.projectmanagement.dtos;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.wikicoding.matrizbackend.projectmanagement.domain.Project;
+import com.wikicoding.matrizbackend.projectmanagement.domain.project.Project;
 import java.util.List;
 import java.util.UUID;
 

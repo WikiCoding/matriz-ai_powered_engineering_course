@@ -1,6 +1,6 @@
 package com.wikicoding.matrizbackend.projectmanagement;
 
-import com.wikicoding.matrizbackend.projectmanagement.persistence.ProjectRepository;
+import com.wikicoding.matrizbackend.projectmanagement.persistence.project.ProjectRepository;
 import com.wikicoding.matrizbackend.team.TeamReferenceChecker;
 import java.util.UUID;
 

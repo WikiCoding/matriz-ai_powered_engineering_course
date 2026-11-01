@@ -1,7 +1,7 @@
-package com.wikicoding.matrizbackend.projectmanagement.persistence;
+package com.wikicoding.matrizbackend.projectmanagement.persistence.task;
 
-import com.wikicoding.matrizbackend.projectmanagement.domain.Task.Priority;
-import com.wikicoding.matrizbackend.projectmanagement.domain.Task.Status;
+import com.wikicoding.matrizbackend.projectmanagement.domain.task.Priority;
+import com.wikicoding.matrizbackend.projectmanagement.domain.task.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,5 +56,16 @@ public class TaskDataModel {
     @Version
     @Column(nullable = false)
     private long version;
+
+    public void changeDetails(UUID projectId, String title, String description, short effort,
+                              Status status, Priority priority, Instant updatedAt) {
+        this.projectId = projectId;
+        this.title = title;
+        this.description = description;
+        this.effort = effort;
+        this.status = status;
+        this.priority = priority;
+        this.updatedAt = updatedAt;
+    }
 
 }

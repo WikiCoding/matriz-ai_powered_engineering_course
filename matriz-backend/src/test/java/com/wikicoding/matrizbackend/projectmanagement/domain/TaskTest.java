@@ -1,5 +1,8 @@
 package com.wikicoding.matrizbackend.projectmanagement.domain;
 
+import com.wikicoding.matrizbackend.projectmanagement.domain.task.Priority;
+import com.wikicoding.matrizbackend.projectmanagement.domain.task.Status;
+import com.wikicoding.matrizbackend.projectmanagement.domain.task.Task;
 import org.junit.jupiter.api.Test;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 
@@ -24,7 +27,7 @@ class TaskTest {
 
         // Act
         Task task = new Task(id, projectId, title, description, (short) 13,
-                Task.Status.IN_PROGRESS, Task.Priority.HIGH, createdAt, updatedAt);
+                Status.IN_PROGRESS, Priority.HIGH, createdAt, updatedAt);
 
         // Assert
         assertThat(task.getId()).isEqualTo(id);
@@ -32,8 +35,8 @@ class TaskTest {
         assertThat(task.getTitle()).isEqualTo(title);
         assertThat(task.getDescription()).isEqualTo(description);
         assertThat(task.getEffort()).isEqualTo((short) 13);
-        assertThat(task.getStatus()).isEqualTo(Task.Status.IN_PROGRESS);
-        assertThat(task.getPriority()).isEqualTo(Task.Priority.HIGH);
+        assertThat(task.getStatus()).isEqualTo(Status.IN_PROGRESS);
+        assertThat(task.getPriority()).isEqualTo(Priority.HIGH);
         assertThat(task.getCreatedAt()).isEqualTo(createdAt);
         assertThat(task.getUpdatedAt()).isEqualTo(updatedAt);
     }
@@ -74,9 +77,9 @@ class TaskTest {
         ThrowingCallable missingId = () -> createTask(null, projectId, "Task", "", (short) 3, timestamp, timestamp);
         ThrowingCallable missingProject = () -> createTask(id, null, "Task", "", (short) 3, timestamp, timestamp);
         ThrowingCallable missingStatus = () -> new Task(id, projectId, "Task", "", (short) 3,
-                null, Task.Priority.MEDIUM, timestamp, timestamp);
+                null, Priority.MEDIUM, timestamp, timestamp);
         ThrowingCallable missingPriority = () -> new Task(id, projectId, "Task", "", (short) 3,
-                Task.Status.TODO, null, timestamp, timestamp);
+                Status.TODO, null, timestamp, timestamp);
         ThrowingCallable missingCreatedAt = () -> createTask(id, projectId, "Task", "", (short) 3, null, timestamp);
         ThrowingCallable missingUpdatedAt = () -> createTask(id, projectId, "Task", "", (short) 3, timestamp, null);
 
@@ -91,7 +94,7 @@ class TaskTest {
 
     private Task createTask(UUID id, UUID projectId, String title, String description, short effort,
                             Instant createdAt, Instant updatedAt) {
-        return new Task(id, projectId, title, description, effort, Task.Status.TODO,
-                Task.Priority.MEDIUM, createdAt, updatedAt);
+        return new Task(id, projectId, title, description, effort, Status.TODO,
+                Priority.MEDIUM, createdAt, updatedAt);
     }
 }
