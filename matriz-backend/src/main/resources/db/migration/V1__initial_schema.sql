@@ -8,13 +8,15 @@ CREATE TABLE app_user (
     id UUID PRIMARY KEY,
     keycloak_subject TEXT UNIQUE,
     email TEXT NOT NULL,
-    team_id UUID NOT NULL REFERENCES team(id),
+    team_id UUID REFERENCES team(id),
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
     provisioning_status TEXT NOT NULL DEFAULT 'PENDING'
         CHECK (provisioning_status IN ('PENDING', 'COMPLETED')),
     provisioning_correlation_id UUID NOT NULL UNIQUE,
     CONSTRAINT completed_user_has_identity CHECK (
-        provisioning_status <> 'COMPLETED' OR keycloak_subject IS NOT NULL
-    )
+        deleted OR provisioning_status <> 'COMPLETED' OR keycloak_subject IS NOT NULL
+    ),
+    CONSTRAINT active_user_has_team CHECK (deleted OR team_id IS NOT NULL)
 );
 CREATE UNIQUE INDEX app_user_email_unique ON app_user (lower(email));
 CREATE INDEX app_user_team_idx ON app_user (team_id);

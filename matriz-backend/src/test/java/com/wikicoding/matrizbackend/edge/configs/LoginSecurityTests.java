@@ -112,6 +112,21 @@ class LoginSecurityTests {
     }
 
     @Test
+    void userAdministrationRejectsNonAdministrators() {
+        // Arrange
+        String userId = "4e39c0f2-90b0-44d5-bc8c-968d365d3375";
+
+        // Act / Assert
+        client.put().uri("/api/v1/users/" + userId + "/role")
+                .headers(h -> h.setBearerAuth("valid"))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{\"role\":\"PROJECT_MANAGER\"}")
+                .exchange().expectStatus().isForbidden();
+        client.delete().uri("/api/v1/users/" + userId)
+                .headers(h -> h.setBearerAuth("valid"))
+                .exchange().expectStatus().isForbidden();
+    }
+
+    @Test
     void registrationRejectsMissingNamesBeforeCreatingIdentity() {
         // Arrange
         String request = "{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\" \",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}";

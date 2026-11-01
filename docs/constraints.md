@@ -61,3 +61,7 @@ The API baseline in openapi.yaml predates the approved pagination/list-sorting c
 The customer removed backend session tracking and IP rate limiting. This supersedes all earlier Redis, limiter, immediate logout, back-channel revocation and immediate role-change invalidation requirements above. Redis is removed from the backend dependencies and Compose. Keycloak retains its own sessions and credential protections. The backend validates JWTs statelessly; logout terminates the Keycloak session, while issued access tokens and role claims remain usable until expiry (five minutes plus validator clock skew). Clients discard tokens on logout. Provider logout failure is reported and can be retried.
 
 Valid tokens require no backend session registration. Missing, invalid and expired tokens remain rejected. Obsolete limiter tests were removed and security tests adjusted. Tests and Docker validation were not run, as requested; prior verification results apply only to the previous implementation. Legacy gateway source remains historical and is not deployed. Existing Redis volumes were not deleted.
+
+## User lifecycle approval (2026-11-01)
+
+The customer approved Administrator updates to user team membership and role and account deletion. Deletion preserves projects and comments with “Deleted user” attribution, removes assignments, and leaves an anonymized local reference so existing foreign keys remain valid. This supersedes earlier user-preservation and no-delete scope statements only for this workflow. Email/profile editing remains out of scope.

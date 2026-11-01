@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.apigateway.controllers;
+package com.wikicoding.matrizbackend.apigateway.dtos;
 
 public record LogoutRequest(String refresh_token) {
     @Override

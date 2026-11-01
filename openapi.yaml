@@ -50,6 +50,14 @@ paths:
       operationId: replaceUserRole
       requestBody: {required: true, content: {application/json: {schema: {type: object, required: [role], properties: {role: {$ref: '#/components/schemas/Role'}}}}}}
       responses: {'200': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Role change requires reconciliation; success not claimed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /api/v1/users/{userId}:
+    parameters: [{ $ref: '#/components/parameters/UserId' }]
+    delete:
+      tags: [Users]
+      summary: Administrator deletes the identity and anonymizes the local profile
+      description: Removes assignments; projects and comments keep the user ID for “Deleted user” attribution. A provider or local failure returns 503 for reconciliation.
+      operationId: deleteUser
+      responses: {'204': {description: Account deleted}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Account deletion requires reconciliation}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/teams/{teamId}:
     parameters: [{name: teamId, in: path, required: true, schema: {type: string, format: uuid}}]
     patch:
@@ -87,13 +95,13 @@ paths:
       tags: [Users]
       summary: List team memberships
       operationId: listUserTeamMemberships
-      responses: {'200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'200': {description: Single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     put:
       tags: [Users]
       summary: Replace the single team membership and atomically remove old-team assignments
       operationId: replaceUserTeamMemberships
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}
-      responses: {'200': {$ref: '#/components/responses/TeamList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'200': {description: Updated single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/teams:
     post:
       tags: [Teams]

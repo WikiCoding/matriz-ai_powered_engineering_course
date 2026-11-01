@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.wikicoding.matrizbackend.apigateway.dtos.KeycloakTokenResponse;
+import com.wikicoding.matrizbackend.apigateway.dtos.LoginRequest;
+import com.wikicoding.matrizbackend.apigateway.dtos.LogoutRequest;
+import com.wikicoding.matrizbackend.apigateway.dtos.RegisterRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -142,7 +146,7 @@ public class AuthenticationController {
                         .retrieve().toBodilessEntity().then()).onErrorMap(this::asProvisioningFailure);
     }
 
-    private Mono<com.wikicoding.matrizbackend.user.ProfileProvisioning.Profile> createLocalProfile(String subject, com.wikicoding.matrizbackend.apigateway.controllers.RegisterRequest request) {
+    private Mono<com.wikicoding.matrizbackend.user.ProfileProvisioning.Profile> createLocalProfile(String subject, RegisterRequest request) {
         return Mono.fromCallable(() -> profiles.create(subject, request.email(), request.teamId()))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }

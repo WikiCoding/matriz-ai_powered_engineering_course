@@ -24,6 +24,7 @@ class ProfileProvisioningIntegrationTests {
         properties.add("spring.datasource.password", postgres::getPassword);
     }
     @Autowired ProfileProvisioning profiles;
+    @Autowired UserManagement management;
     @Autowired JdbcTemplate jdbc;
 
     @Test
@@ -55,5 +56,36 @@ class ProfileProvisioningIntegrationTests {
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE team_id = ?", Long.class, team)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT email FROM app_user WHERE id = ?", String.class, existing.id())).isEqualTo(email);
+    }
+
+    @Test
+    void deletionPreservesProjectsAndCommentsButRemovesAssignments() {
+        // Arrange
+        UUID team = UUID.randomUUID(), project = UUID.randomUUID(), task = UUID.randomUUID();
+        UUID comment = UUID.randomUUID();
+        jdbc.update("INSERT INTO team VALUES (?, 'Deletion test')", team);
+        var user = profiles.create(UUID.randomUUID().toString(), UUID.randomUUID() + "@example.test", team);
+        jdbc.update("INSERT INTO project (id, name, description, team_id, owner_id) VALUES (?, 'Project', '', ?, ?)",
+                project, team, user.id());
+        jdbc.update("INSERT INTO task (id, project_id, title, description, effort, status, priority, created_at, updated_at) "
+                + "VALUES (?, ?, 'Task', '', 1, 'TODO', 'MEDIUM', now(), now())", task, project);
+        jdbc.update("INSERT INTO task_assignment (task_id, user_id) VALUES (?, ?)", task, user.id());
+        jdbc.update("INSERT INTO comment (id, task_id, author_id, content, created_at) "
+                + "VALUES (?, ?, ?, 'Comment', now())", comment, task, user.id());
+
+        // Act
+        management.deleteLocal(user.id());
+
+        // Assert
+        assertThat(jdbc.queryForObject("SELECT deleted FROM app_user WHERE id = ?", Boolean.class, user.id()))
+                .isTrue();
+        assertThat(jdbc.queryForObject("SELECT team_id FROM app_user WHERE id = ?", UUID.class, user.id()))
+                .isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM task_assignment WHERE user_id = ?", Long.class, user.id()))
+                .isZero();
+        assertThat(jdbc.queryForObject("SELECT owner_id FROM project WHERE id = ?", UUID.class, project))
+                .isEqualTo(user.id());
+        assertThat(jdbc.queryForObject("SELECT author_id FROM comment WHERE id = ?", UUID.class, comment))
+                .isEqualTo(user.id());
     }
 }

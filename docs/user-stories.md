@@ -139,6 +139,8 @@ Verify that newly registered, email-verified users can log in directly with thei
 
 Verify Administrator-only role changes with exactly one role; no Administrator project/task/comment access; Project Manager comment reads and rejected comment posts; no ownership-transfer or email/profile-edit workflow; HTTP 409 for occupied-team deletion and second assignments; cleanup after role/project/task moves; case-insensitive duplicate emails and recovery from partial provisioning.
 
+Administrator user deletion removes the Keycloak account and task assignments while retaining anonymized project owner and comment author references. Read models show “Deleted user” for those references. A partial provider/application failure is reported for retry and reconciliation.
+
 Replay the logged-out session cookie and bearer token on each replica immediately after successful logout; both must fail. Cover in-flight requests separately: logout prevents subsequent authorization, but cannot undo a transaction already committed.
 
 Verify consolidated backend metrics and logs arrive in Grafana through their respective stores, no secrets/content leak to telemetry, and p95 latency is measurable against the under-two-second NFR. No dedicated business-audit store or fixed operational-log retention test is required. Load-test conditions remain D-08; production and its SLA acceptance are deferred.

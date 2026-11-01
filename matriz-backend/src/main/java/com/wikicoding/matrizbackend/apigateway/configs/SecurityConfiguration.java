@@ -71,7 +71,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/teams", "/api/v1/teams/**")
+                        .requestMatchers("/api/v1/teams", "/api/v1/teams/**", "/api/v1/users", "/api/v1/users/**")
                         .access((authentication, context) -> {
                             var principal = authentication.get();
                             boolean administrator = principal instanceof JwtAuthenticationToken jwt
@@ -94,7 +94,8 @@ public class SecurityConfiguration {
                 try {
                     chain.doFilter(request, response);
                 } finally {
-                    log.info("HTTP {} {} -> {}", request.getMethod(), request.getRequestURI(), response.getStatus());
+                    log.info("HTTP {} {} from {} with body {} -> {}", request.getMethod(), request.getRequestURI(),
+                            request.getRemoteAddr(), request.getContentType(), response.getStatus());
                 }
             }
         };

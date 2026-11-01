@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface TaskAssignmentRepository extends JpaRepository<TaskAssignmentDataModel, UUID> {
+    void deleteByUserId(UUID userId);
 }

@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.apigateway.controllers;
+package com.wikicoding.matrizbackend.apigateway.dtos;
 
 public record KeycloakTokenResponse(
         String access_token, String refresh_token, String token_type,

@@ -33,11 +33,33 @@ public class UserDataModel {
     @Column(name = "team_id", nullable = false)
     private UUID teamId;
 
+    @Column(nullable = false)
+    private boolean deleted;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "provisioning_status", nullable = false)
     private ProvisioningStatus provisioningStatus;
 
     @Column(name = "provisioning_correlation_id", nullable = false)
     private UUID provisioningCorrelationId;
+
+    public UserDataModel(UUID id, String keycloakSubject, String email, UUID teamId,
+            ProvisioningStatus provisioningStatus, UUID provisioningCorrelationId) {
+        this.id = id;
+        this.keycloakSubject = keycloakSubject;
+        this.email = email;
+        this.teamId = teamId;
+        this.provisioningStatus = provisioningStatus;
+        this.provisioningCorrelationId = provisioningCorrelationId;
+    }
+
+    public void moveToTeam(UUID teamId) { this.teamId = teamId; }
+
+    public void markDeleted() {
+        this.deleted = true;
+        this.keycloakSubject = null;
+        this.email = "deleted-" + id + "@invalid.local";
+        this.teamId = null;
+    }
 
 }
