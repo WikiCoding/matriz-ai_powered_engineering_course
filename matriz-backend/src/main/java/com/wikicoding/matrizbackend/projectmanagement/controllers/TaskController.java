@@ -4,6 +4,9 @@ import com.wikicoding.matrizbackend.projectmanagement.dtos.tasks.TaskResponse;
 import com.wikicoding.matrizbackend.projectmanagement.dtos.tasks.TaskRequest;
 import com.wikicoding.matrizbackend.projectmanagement.dtos.tasks.TaskUpdateRequest;
 import com.wikicoding.matrizbackend.projectmanagement.services.TaskService;
+import com.wikicoding.matrizbackend.projectmanagement.services.CommentService;
+import com.wikicoding.matrizbackend.projectmanagement.dtos.comments.CommentResponse;
+import java.util.List;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class TaskController {
     private final TaskService taskService;
+    private final CommentService commentService;
+
+    @GetMapping("/tasks/{taskId}/comments")
+    public List<CommentResponse> findAllCommentsFromTask(@PathVariable UUID taskId) {
+        return commentService.findAllCommentsFromTask(taskId).stream().map(CommentResponse::from).toList();
+    }
 
     @PostMapping("/tasks")
     public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskRequest request) {

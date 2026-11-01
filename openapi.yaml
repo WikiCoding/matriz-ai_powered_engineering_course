@@ -205,12 +205,20 @@ paths:
       summary: Project Managers and Software Engineers read task comments
       operationId: listTaskComments
       responses: {'200': {$ref: '#/components/responses/CommentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/v1/comments:
     post:
       tags: [Comments]
       summary: Software Engineer adds comment as authenticated author
-      operationId: addTaskComment
+      operationId: createComment
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CommentCreate'}}}}
       responses: {'201': {$ref: '#/components/responses/Comment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/v1/comments/{commentId}:
+    get:
+      tags: [Comments]
+      summary: Get a comment
+      operationId: getComment
+      parameters: [{name: commentId, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {$ref: '#/components/responses/Comment'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
 components:
   securitySchemes:
     keycloakOAuth:
@@ -275,7 +283,7 @@ components:
       allOf: [{$ref: '#/components/schemas/TaskCreate'}, {type: object, required: [id, projectId, teamId, createdAt, updatedAt, assignees], properties: {id: {type: string, format: uuid}, projectId: {type: string, format: uuid}, teamId: {type: string, format: uuid, readOnly: true}, createdAt: {type: string, description: 'Server timezone; dd/MM/yyyy HH:mm:ss', readOnly: true}, updatedAt: {type: string, description: 'Server timezone; dd/MM/yyyy HH:mm:ss', readOnly: true}, assignees: {type: array, maxItems: 1, items: {$ref: '#/components/schemas/User'}}}}]
     AssignmentCreate: {type: object, required: [userId], properties: {userId: {type: string, format: uuid}}}
     Assignment: {type: object, required: [taskId, userId], properties: {taskId: {type: string, format: uuid}, userId: {type: string, format: uuid}}}
-    CommentCreate: {type: object, required: [content], properties: {content: {type: string, minLength: 1, maxLength: 2000}}}
+    CommentCreate: {type: object, required: [taskId, content], properties: {taskId: {type: string, format: uuid}, content: {type: string, minLength: 1, maxLength: 2000}}}
     Comment: {allOf: [{$ref: '#/components/schemas/CommentCreate'}, {type: object, required: [id, taskId, authorId, createdAt], properties: {id: {type: string, format: uuid}, taskId: {type: string, format: uuid}, authorId: {type: string, format: uuid, readOnly: true}, createdAt: {type: string, description: 'Server timezone; dd/MM/yyyy HH:mm:ss', readOnly: true}}}]}
     Dashboard: {type: object, required: [projects, taskCounts], properties: {projects: {type: array, items: {$ref: '#/components/schemas/Project'}}, taskCounts: {type: object, properties: {TODO: {type: integer, minimum: 0}, IN_PROGRESS: {type: integer, minimum: 0}, DONE: {type: integer, minimum: 0}}}}}
     Error: {type: object, required: [code, message], properties: {code: {type: string}, message: {type: string}}}
