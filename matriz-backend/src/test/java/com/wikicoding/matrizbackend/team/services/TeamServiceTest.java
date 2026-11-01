@@ -1,6 +1,8 @@
 package com.wikicoding.matrizbackend.team.services;
 
 import com.wikicoding.matrizbackend.team.TeamReferenceChecker;
+import com.wikicoding.matrizbackend.team.exceptions.TeamInUseException;
+import com.wikicoding.matrizbackend.team.exceptions.TeamNotFoundException;
 import com.wikicoding.matrizbackend.team.persistence.TeamDataModel;
 import com.wikicoding.matrizbackend.team.persistence.TeamRepository;
 import java.util.List;
@@ -76,7 +78,7 @@ class TeamServiceTest {
         TeamDataModel team = new TeamDataModel(teamId, "Platform");
         TeamReferenceChecker references = mock(TeamReferenceChecker.class);
         when(repository.findById(teamId)).thenReturn(Optional.of(team));
-        when(references.hasReferenceTo(teamId)).thenReturn(true);
+        when(references.hasReferenceToTeamId(teamId)).thenReturn(true);
         TeamService service = new TeamService(repository, List.of(references));
 
         // Act
@@ -96,7 +98,7 @@ class TeamServiceTest {
         TeamDataModel team = new TeamDataModel(teamId, "Platform");
         TeamReferenceChecker references = mock(TeamReferenceChecker.class);
         when(repository.findById(teamId)).thenReturn(Optional.of(team));
-        when(references.hasReferenceTo(teamId)).thenReturn(false);
+        when(references.hasReferenceToTeamId(teamId)).thenReturn(false);
         TeamService service = new TeamService(repository, List.of(references));
 
         // Act

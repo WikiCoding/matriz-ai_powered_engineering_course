@@ -1,7 +1,8 @@
 package com.wikicoding.matrizbackend.team.controllers;
 
-import com.wikicoding.matrizbackend.team.services.TeamInUseException;
-import com.wikicoding.matrizbackend.team.services.TeamNotFoundException;
+import com.wikicoding.matrizbackend.team.exceptions.GlobalExceptionHandler;
+import com.wikicoding.matrizbackend.team.exceptions.TeamInUseException;
+import com.wikicoding.matrizbackend.team.exceptions.TeamNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.team.services;
+package com.wikicoding.matrizbackend.team.exceptions;
 
 import java.util.UUID;
 

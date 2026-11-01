@@ -1,7 +1,5 @@
-package com.wikicoding.matrizbackend.team.controllers;
+package com.wikicoding.matrizbackend.team.exceptions;
 
-import com.wikicoding.matrizbackend.team.services.TeamInUseException;
-import com.wikicoding.matrizbackend.team.services.TeamNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,12 +10,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(TeamNotFoundException.class)
-    ResponseEntity<ErrorResponse> handleTeamNotFound(TeamNotFoundException exception) {
+    public ResponseEntity<ErrorResponse> handleTeamNotFound(TeamNotFoundException exception) {
         return error(HttpStatus.NOT_FOUND, "TEAM_NOT_FOUND", exception.getMessage());
     }
 
     @ExceptionHandler(TeamInUseException.class)
-    ResponseEntity<ErrorResponse> handleTeamInUse(TeamInUseException exception) {
+    public ResponseEntity<ErrorResponse> handleTeamInUse(TeamInUseException exception) {
         return error(HttpStatus.CONFLICT, "TEAM_IN_USE", exception.getMessage());
     }
 

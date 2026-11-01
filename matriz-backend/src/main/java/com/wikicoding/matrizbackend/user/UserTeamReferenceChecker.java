@@ -15,7 +15,7 @@ class UserTeamReferenceChecker implements TeamReferenceChecker {
     private final UserRepository usersRepository;
 
     @Override
-    public boolean hasReferenceTo(UUID teamId) {
+    public boolean hasReferenceToTeamId(UUID teamId) {
         return usersRepository.existsByTeamId(teamId);
     }
 }

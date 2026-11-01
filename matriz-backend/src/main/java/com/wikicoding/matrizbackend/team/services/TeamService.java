@@ -2,6 +2,8 @@ package com.wikicoding.matrizbackend.team.services;
 
 import com.wikicoding.matrizbackend.team.TeamReferenceChecker;
 import com.wikicoding.matrizbackend.team.domain.Team;
+import com.wikicoding.matrizbackend.team.exceptions.TeamInUseException;
+import com.wikicoding.matrizbackend.team.exceptions.TeamNotFoundException;
 import com.wikicoding.matrizbackend.team.persistence.TeamDataModel;
 import com.wikicoding.matrizbackend.team.persistence.TeamRepository;
 import java.util.List;
@@ -40,7 +42,7 @@ public class TeamService {
     @Transactional
     public void delete(UUID teamId) {
         TeamDataModel team = teams.findById(teamId).orElseThrow(() -> new TeamNotFoundException(teamId));
-        if (referenceCheckers.stream().anyMatch(checker -> checker.hasReferenceTo(teamId))) {
+        if (referenceCheckers.stream().anyMatch(checker -> checker.hasReferenceToTeamId(teamId))) {
             throw new TeamInUseException(teamId);
         }
         try {
