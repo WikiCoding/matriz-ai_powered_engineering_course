@@ -99,9 +99,9 @@ paths:
       summary: Get an accessible project
       operationId: getProject
       responses: {'200': {$ref: '#/components/responses/Project'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
-    patch:
+    put:
       tags: [Projects]
-      summary: Update an accessible project
+      summary: Replace an accessible project's editable fields
       operationId: updateProject
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProjectUpdate'}}}}
       responses: {'200': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
@@ -135,6 +135,7 @@ paths:
     patch:
       tags: [Tasks]
       summary: Update an accessible task
+      description: Omitted or null fields retain their current values. Sending an empty object makes no field changes but refreshes the last-edited timestamp.
       operationId: updateTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskUpdate'}}}}
       responses: {'200': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}

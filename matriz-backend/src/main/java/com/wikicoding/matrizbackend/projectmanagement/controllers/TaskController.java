@@ -37,8 +37,14 @@ public class TaskController {
         return TaskResponse.from(taskService.findTaskById(taskId));
     }
 
-    @PutMapping("/tasks/{taskId}")
+    @PatchMapping("/tasks/{taskId}")
     public TaskResponse updateTask(@PathVariable UUID taskId, @Valid @RequestBody TaskUpdateRequest request) {
         return TaskResponse.from(taskService.updateTask(taskId, request));
+    }
+
+    @DeleteMapping("/tasks/{taskId}")
+    public ResponseEntity<Void> deleteTask(@PathVariable UUID taskId) {
+        taskService.deleteTask(taskId);
+        return ResponseEntity.noContent().build();
     }
 }

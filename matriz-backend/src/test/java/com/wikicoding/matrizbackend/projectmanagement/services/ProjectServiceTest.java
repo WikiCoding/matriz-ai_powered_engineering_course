@@ -26,6 +26,38 @@ import org.mockito.ArgumentCaptor;
 
 class ProjectServiceTest {
     @Test
+    void deletesExistingProject() {
+        // Arrange
+        var projects = mock(ProjectRepository.class);
+        var service = new ProjectService(projects, mock(TaskAssignmentRepository.class),
+                mock(ProjectTeamLookup.class), mock(ProjectOwnerLookup.class));
+        UUID id = UUID.randomUUID();
+        var stored = new ProjectDataModel(id, "Alpha", "", UUID.randomUUID(), UUID.randomUUID());
+        when(projects.findById(id)).thenReturn(Optional.of(stored));
+
+        // Act
+        service.deleteProject(id);
+
+        // Assert
+        verify(projects).delete(stored);
+        verify(projects).flush();
+    }
+
+    @Test
+    void missingProjectCannotBeDeleted() {
+        // Arrange
+        var projects = mock(ProjectRepository.class);
+        var service = new ProjectService(projects, mock(TaskAssignmentRepository.class),
+                mock(ProjectTeamLookup.class), mock(ProjectOwnerLookup.class));
+        UUID id = UUID.randomUUID();
+
+        // Act / Assert
+        assertThatThrownBy(() -> service.deleteProject(id))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verify(projects, never()).delete(any());
+    }
+    @Test
     void listsProjectsWithDefaultPageSizeAndStableAlphabeticSort() {
         // Arrange
         var projects = mock(ProjectRepository.class);

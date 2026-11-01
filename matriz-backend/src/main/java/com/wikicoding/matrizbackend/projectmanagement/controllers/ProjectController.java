@@ -46,6 +46,12 @@ public class ProjectController {
         return ProjectResponse.from(projectService.updateProject(projectId, request.name(), request.description(), request.teamId()));
     }
 
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<Void> delete(@PathVariable UUID projectId) {
+        projectService.deleteProject(projectId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{projectId}/tasks")
     public TaskPageResponse findAllTasksFromProject(@PathVariable UUID projectId,
             @RequestParam(required = false) Status status, @RequestParam(required = false) Priority priority,

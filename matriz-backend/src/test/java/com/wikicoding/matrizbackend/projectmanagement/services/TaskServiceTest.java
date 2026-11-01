@@ -27,6 +27,33 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class TaskServiceTest {
+    @Test
+    void deletesExistingTask() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        Instant created = Instant.parse("2026-01-01T00:00:00Z");
+        var stored = new TaskDataModel(id, projectId, "Task", "", (short) 1,
+                Status.TODO, Priority.MEDIUM, created, created, 0);
+        when(tasks.findById(id)).thenReturn(Optional.of(stored));
+
+        // Act
+        service.deleteTask(id);
+
+        // Assert
+        verify(tasks).delete(stored);
+        verify(tasks).flush();
+    }
+
+    @Test
+    void missingTaskCannotBeDeleted() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+
+        // Act / Assert
+        assertThatThrownBy(() -> service.deleteTask(id))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
     private final TaskRepository tasks = mock(TaskRepository.class);
     private final ProjectRepository projects = mock(ProjectRepository.class);
     private final TaskAssignmentRepository assignments = mock(TaskAssignmentRepository.class);

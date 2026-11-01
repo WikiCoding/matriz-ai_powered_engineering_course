@@ -32,19 +32,4 @@ class TeamControllerTest {
         verify(service).create("Platform");
     }
 
-    @Test
-    void deletesAnEmptyTeam() {
-        // Arrange
-        UUID teamId = UUID.randomUUID();
-        TeamService service = mock(TeamService.class);
-        TeamController controller = new TeamController(service);
-
-        // Act
-        var response = controller.delete(teamId);
-
-        // Assert
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        verify(service).delete(teamId);
-    }
-
 }

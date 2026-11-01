@@ -73,6 +73,14 @@ public class ProjectService {
         return validated;
     }
 
+    @Transactional
+    public void deleteProject(UUID projectId) {
+        ProjectDataModel project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        projectRepository.delete(project);
+        projectRepository.flush();
+    }
+
     private UUID validateExistingTeamByTeamId(UUID teamId) {
         if (teamId == null || !teamLookup.exists(teamId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Team not found");
