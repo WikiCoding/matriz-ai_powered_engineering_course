@@ -19,5 +19,8 @@ public class Team {
     public Team(UUID id, String name) {
         this.id = Objects.requireNonNull(id, "id is required");
         this.name = Objects.requireNonNull(name, "name is required");
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("name must be non-blank");
+        }
     }
 }

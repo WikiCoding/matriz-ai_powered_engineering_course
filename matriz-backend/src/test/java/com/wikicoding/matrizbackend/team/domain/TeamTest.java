@@ -6,6 +6,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 class TeamTest {
@@ -35,5 +36,17 @@ class TeamTest {
         // Assert
         assertThatNullPointerException().isThrownBy(missingId).withMessage("id is required");
         assertThatNullPointerException().isThrownBy(missingName).withMessage("name is required");
+    }
+
+    @Test
+    void rejectsBlankName() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+
+        // Act
+        ThrowingCallable action = () -> new Team(id, "   ");
+
+        // Assert
+        assertThatIllegalArgumentException().isThrownBy(action).withMessage("name must be non-blank");
     }
 }

@@ -6,14 +6,14 @@ The revised logical model reflects the customer's adoption of Practical Assignme
 
 The Project Management module owns Project, Task, TaskAssignment and Comment. User owns application profiles and identity links; Team owns teams and membership. Combining project and task responsibilities into one module preserves the separate logical entities and relationships below; it does not require one aggregate or loading all related records together. Cross-module eligibility checks and assignment cleanup use explicit interfaces as described in architecture.md.
 
-| Entity | Logical attributes | Notes |
-| --- | --- | --- |
-| User | id, keycloakSubject, email, teamId | Local profile/reference; email is unique case-insensitively and mirrored from Keycloak. No email/profile editing in MVP. No password or authoritative role column. |
-| Team | id, name | Exactly one team per user; administered by Administrators. Reject deletion while users or projects reference the team. |
-| Project | id, name, description, teamId, ownerId | Exactly one team and authenticated creator as owner. All Project Managers and Software Engineers can access it; owner records the creator; no transfer workflow. |
-| Task | id, title, description, effort, status, priority, createdAt, updatedAt, projectId, version | Team derived from project. Single assigneeId removed. `version` supports optimistic concurrency control. |
-| TaskAssignment | taskId, userId | Unique taskId and unique task/user pair; zero or one Software Engineer per task. Assignee must belong to the project's team; user-team moves remove old-team assignments. |
-| Comment | id, taskId, authorId, content, createdAt | Author and timestamp supplied by backend; no edit/delete workflow assumed. |
+| Entity         | Logical attributes                                                                         | Notes                                                                                                                                                                     |
+|----------------|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| User           | id, keycloakSubject, email, teamId                                                         | Local profile/reference; email is unique case-insensitively and mirrored from Keycloak. No email/profile editing in MVP. No password or authoritative role column.        |
+| Team           | id, name                                                                                   | Exactly one team per user; administered by Administrators. Reject deletion while users or projects reference the team.                                                    |
+| Project        | id, name, description, teamId, ownerId                                                     | Exactly one team and authenticated creator as owner. All Project Managers and Software Engineers can access it; owner records the creator; no transfer workflow.          |
+| Task           | id, title, description, effort, status, priority, createdAt, updatedAt, projectId, version | Team derived from project. Single assigneeId removed. `version` supports optimistic concurrency control.                                                                  |
+| TaskAssignment | taskId, userId                                                                             | Unique taskId and unique task/user pair; zero or one Software Engineer per task. Assignee must belong to the project's team; user-team moves remove old-team assignments. |
+| Comment        | id, taskId, authorId, content, createdAt                                                   | Author and timestamp supplied by backend; no edit/delete workflow assumed.                                                                                                |
 
 ```mermaid
 erDiagram
