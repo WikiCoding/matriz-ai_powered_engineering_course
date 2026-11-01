@@ -1,7 +1,5 @@
 package com.wikicoding.matrizbackend.user;
 
-import com.wikicoding.matrizbackend.projectmanagement.UserAssignmentCleanup;
-import com.wikicoding.matrizbackend.team.TeamLookup;
 import com.wikicoding.matrizbackend.user.domain.User.ProvisioningStatus;
 import com.wikicoding.matrizbackend.user.persistence.UserDataModel;
 import com.wikicoding.matrizbackend.user.persistence.UserRepository;
@@ -15,62 +13,34 @@ import static org.mockito.Mockito.*;
 
 class UserManagementTest {
     private final UserRepository users = mock(UserRepository.class);
-    private final UserAssignmentCleanup assignments = mock(UserAssignmentCleanup.class);
-    private final TeamLookup teams = mock(TeamLookup.class);
-    private final UserManagement management = new UserManagement(users, assignments, teams);
+    private final UserManagement management = new UserManagement(users);
 
     @Test
-    void movingTeamRemovesAssignmentsAndChangesMembership() {
+    void readsExistingUserWithoutChangingProfile() {
         // Arrange
-        UUID id = UUID.randomUUID(), oldTeam = UUID.randomUUID(), newTeam = UUID.randomUUID();
-        UserDataModel user = profile(id, oldTeam);
-        when(teams.exists(newTeam)).thenReturn(true);
+        UUID id = UUID.randomUUID(), teamId = UUID.randomUUID();
+        UserDataModel user = new UserDataModel(id, UUID.randomUUID().toString(),
+                "member@example.test", teamId, ProvisioningStatus.COMPLETED, UUID.randomUUID());
         when(users.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(user));
 
         // Act
-        var result = management.moveToTeam(id, newTeam);
+        var result = management.requireActive(id);
 
         // Assert
-        assertThat(result.teamId()).isEqualTo(newTeam);
-        assertThat(user.getTeamId()).isEqualTo(newTeam);
-        var order = inOrder(assignments, users);
-        order.verify(assignments).removeForUser(id);
-        order.verify(users).flush();
+        assertThat(result.teamId()).isEqualTo(teamId);
+        assertThat(result.email()).isEqualTo("member@example.test");
+        verify(users, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(users, never()).flush();
     }
 
     @Test
-    void invalidTeamDoesNotChangeUserOrAssignments() {
-        // Arrange
-        UUID id = UUID.randomUUID(), unknownTeam = UUID.randomUUID();
-        when(teams.exists(unknownTeam)).thenReturn(false);
-
-        // Act / Assert
-        assertThatThrownBy(() -> management.moveToTeam(id, unknownTeam))
-                .isInstanceOf(ResponseStatusException.class);
-        verifyNoInteractions(users, assignments);
-    }
-
-    @Test
-    void deletingUserRemovesAssignmentsAndAnonymizesProfile() {
+    void rejectsUnknownUserWithoutChangingProfiles() {
         // Arrange
         UUID id = UUID.randomUUID();
-        UserDataModel user = profile(id, UUID.randomUUID());
-        when(users.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(user));
+        when(users.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
-        // Act
-        management.deleteLocal(id);
-
-        // Assert
-        assertThat(user.isDeleted()).isTrue();
-        assertThat(user.getEmail()).startsWith("deleted-");
-        assertThat(user.getKeycloakSubject()).isNull();
-        assertThat(user.getTeamId()).isNull();
-        verify(assignments).removeForUser(id);
-        verify(users).flush();
-    }
-
-    private UserDataModel profile(UUID id, UUID teamId) {
-        return new UserDataModel(id, UUID.randomUUID().toString(), "member@example.test", teamId,
-                ProvisioningStatus.COMPLETED, UUID.randomUUID());
+        // Act / Assert
+        assertThatThrownBy(() -> management.requireActive(id)).isInstanceOf(ResponseStatusException.class);
+        verify(users, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

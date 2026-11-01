@@ -53,13 +53,4 @@ public class UserDataModel {
         this.provisioningCorrelationId = provisioningCorrelationId;
     }
 
-    public void moveToTeam(UUID teamId) { this.teamId = teamId; }
-
-    public void markDeleted() {
-        this.deleted = true;
-        this.keycloakSubject = null;
-        this.email = "deleted-" + id + "@invalid.local";
-        this.teamId = null;
-    }
-
 }
