@@ -19,9 +19,9 @@ Reuse navigation, fields, buttons, dialogs, badges, assignment chips, comments a
 - Screens show potential actions for users authorized to perform them, not permissions granted to every role. Only Software Engineers create comments; Project Managers manage the optional Software Engineer assignee. All Project Managers and Software Engineers can access every project; assignees must be in the project's team. Project Managers and Software Engineers read comments; Administrators only see administration workflows.
 - The deletion dialog must explain permanent removal of the project/tasks and dependent comments/assignments.
 - Owner and comment author are backend-derived. No ownership-transfer control is added.
-- The board focuses on changed project/task journeys. Existing administrator user/team membership requirements remain in force; the board is not a complete administration design. The administration user list is paginated and sorts by email; the team list is paginated and sorts alphabetically by name.
+- The board focuses on changed project/task journeys. Administrator workflows are user/team creation and viewing/listing only, with one role and one team assigned at user creation. User/team updates and deletion, including role/membership changes and team renaming, were not requested and must have no controls (D-17); the board is not a complete administration design. The administration user list is paginated and sorts by email; the team list is paginated and sorts alphabetically by name.
 - List controls include pagination on tasks, projects, teams and users. Tasks sort by creation date and filter by status (with the existing priority filter); projects and teams sort alphabetically by name; users sort by email. The current PNG does not yet depict these controls, so these textual notes take precedence.
-- No new authentication policies, comment editing/deletion, Kanban, analytics or registration flows are introduced.
+- No new authentication policies, individual comment editing/deletion, Kanban, analytics or registration flows are introduced.
 - The API baseline is approved and updated for current decisions. This wireframe does not approve unresolved public contracts or business rules.
 
 ## Asset provenance

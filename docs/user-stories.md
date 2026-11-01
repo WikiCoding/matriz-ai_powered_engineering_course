@@ -10,14 +10,18 @@ As an Administrator, I want to provision a user with email and a Keycloak role.
 2. Missing/invalid details produce an understandable error without claiming successful creation.
 3. Credentials and role authority remain in Keycloak.
 
-Emails are unique case-insensitively; exactly one Administrator-assigned role and one team are required. Partial provisioning must not report success or create duplicates on retry. No email/profile editing.
+Emails are unique case-insensitively; exactly one Administrator-assigned role and one team are required. Partial provisioning must not report success or create duplicates on retry. No post-creation user updates (including email/profile, role or team membership) or user deletion: these were not requested.
 
-## US-01.2 — Manage team membership
+## US-01.2 — Create and view teams
 
-As an Administrator, I want to assign or move users between teams.
+As an Administrator, I want to create and view teams so that a team can be selected during user and project creation.
 
-1. Successful changes appear in the user's membership.
-2. Every user retains exactly one team; remove now-invalid assignments atomically. Reject deletion of teams with users/projects.
+1. A valid, nonblank team name creates a team that appears in the team listing and persists after reopening.
+2. Missing or whitespace-only names are rejected without creating a team.
+3. Team creation is Administrator-only; existing listing permissions remain unchanged. Pagination and alphabetical sorting follow US-05.1.
+4. Team updating (including renaming) and deletion were not requested and are outside scope. No edit/delete workflow is provided.
+
+User membership is assigned once during user creation under US-01.1. Moving users between teams was not requested and is outside scope.
 
 ## US-01.3 — Sign in and sign out
 
@@ -81,7 +85,7 @@ As a Project Manager, I want to assign at most one Software Engineer to a task a
 2. Duplicate task/user pairs and a second assignee are rejected, including concurrent requests.
 3. Nonexistent or ineligible users cannot be assigned; removing the assignment leaves the task unassigned and does not delete the user.
 
-Tasks may have zero assignees. Only Software Engineers qualify and only Project Managers manage assignment. Assignees must belong to the project team. Moving a user to a new team automatically removes their old-team assignments atomically; role changes, project-team changes and task moves also remove assignments that become invalid.
+Tasks may have zero assignees. Only Software Engineers qualify and only Project Managers manage assignment. Assignees must belong to the project team. Project-team changes and task moves atomically remove assignments that become invalid. Post-creation user role and membership changes are outside scope.
 
 ## US-03.4 — Add and read comments
 
@@ -91,7 +95,7 @@ As a Software Engineer permitted to access the task, I want to add and read task
 2. Backend records the authenticated author and date; supplied author values cannot impersonate another user.
 3. Comments remain available after reopening the task and are visible only with the required project/task access.
 
-Use server-zone 24-hour timestamps. Project Managers can read comments; Administrators cannot. Comment editing/deletion is not added.
+Use server-zone 24-hour timestamps. Project Managers can read comments; Administrators cannot. Individual comment editing/deletion was not requested and is outside scope. Deleting the parent task or project still physically deletes its comments.
 
 ## US-04.1 — View accessible work
 
@@ -133,13 +137,13 @@ Verify validation, unauthorized resource access and create/read-back persistence
 
 Verify exactly one team per user; administrator-only provisioning/team administration; zero-or-one Software Engineer assignee enforced under concurrency; Project-Manager-only assignment mutation; Software-Engineer-only comment creation; UUID-only identifiers with no UI identifier fields; physical cascade deletion without orphans; server-zone dd/MM/yyyy HH:mm:ss timestamp formatting; 5 requests/second per IP with Redis and HTTP 429 on limiter outage. Dependency references above refer only to the remaining portions in constraints.md.
 
-Verify that newly registered, email-verified users can log in directly with their supplied password, eight-hour absolute session expiry and reauthentication, same-team assignment rejection, atomic old-team unassignment on user moves, shared cross-route/replica rate counters and Redis outage HTTP 429. Migration tests must apply Flyway to an empty PostgreSQL database and upgrade an existing one without losing retained records.
+Verify that newly registered, email-verified users can log in directly with their supplied password, eight-hour absolute session expiry and reauthentication, same-team assignment rejection, atomic invalid-assignment cleanup on project-team changes and task moves, shared cross-route/replica rate counters and Redis outage HTTP 429. Migration tests must apply Flyway to an empty PostgreSQL database and upgrade an existing one without losing retained records.
 
 ## Final decision acceptance checks
 
-Verify Administrator-only role changes with exactly one role; no Administrator project/task/comment access; Project Manager comment reads and rejected comment posts; no ownership-transfer or email/profile-edit workflow; HTTP 409 for occupied-team deletion and second assignments; cleanup after role/project/task moves; case-insensitive duplicate emails and recovery from partial provisioning.
+Verify Administrator-only assignment of exactly one role and one team at user creation; no Administrator project/task/comment access; Project Manager comment reads and rejected comment posts; no ownership-transfer workflow; no user/team update or deletion workflow, including post-creation user role/team changes and team renaming; HTTP 409 for second assignments; cleanup after project-team changes and task moves; case-insensitive duplicate emails and recovery from partial provisioning.
 
-Administrator user deletion removes the Keycloak account and task assignments while retaining anonymized project owner and comment author references. Read models show “Deleted user” for those references. A partial provider/application failure is reported for retry and reconciliation.
+User/team update and deletion functionality was not requested (D-17). Verify that the API contract and UI expose creation/read workflows only for these resources. Failed provisioning still requires compensation and retry/reconciliation; it does not introduce deletion of successfully created accounts. Project/task deletion continues to preserve users and teams while cascading to dependent comments and assignments.
 
 Replay the logged-out session cookie and bearer token on each replica immediately after successful logout; both must fail. Cover in-flight requests separately: logout prevents subsequent authorization, but cannot undo a transaction already committed.
 

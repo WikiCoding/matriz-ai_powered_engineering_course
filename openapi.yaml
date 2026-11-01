@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Matriz API
-  version: 0.5.0
-  description: Approved API baseline revised for customer decisions. Remaining details are in docs/constraints.md.
+  version: 0.6.0
+  description: Approved API baseline revised for customer decisions. User/team updates and deletion were not requested and are excluded, including post-creation role and membership changes. Individual comment updates/deletion are excluded; project/task deletion cascades remain. Remaining details are in docs/constraints.md (D-17).
 servers:
   - url: https://api.matriz.example.com
     description: Placeholder host; deployment is undecided.
@@ -42,35 +42,6 @@ paths:
               properties:
                 refresh_token: {type: string, minLength: 1, writeOnly: true}
       responses: {'204': {description: Keycloak logout completed}, '400': {description: Missing or blank refresh token}, '503': {description: Keycloak logout incomplete; retry logout.}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-  /api/v1/users/{userId}/role:
-    parameters: [{ $ref: '#/components/parameters/UserId' }]
-    put:
-      tags: [Users]
-      summary: Administrator assigns exactly one role and removes invalid assignments
-      operationId: replaceUserRole
-      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [role], properties: {role: {$ref: '#/components/schemas/Role'}}}}}}
-      responses: {'200': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Role change requires reconciliation; success not claimed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-  /api/v1/users/{userId}:
-    parameters: [{ $ref: '#/components/parameters/UserId' }]
-    delete:
-      tags: [Users]
-      summary: Administrator deletes the identity and anonymizes the local profile
-      description: Removes assignments; projects and comments keep the user ID for “Deleted user” attribution. A provider or local failure returns 503 for reconciliation.
-      operationId: deleteUser
-      responses: {'204': {description: Account deleted}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Account deletion requires reconciliation}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-  /api/v1/teams/{teamId}:
-    parameters: [{name: teamId, in: path, required: true, schema: {type: string, format: uuid}}]
-    patch:
-      tags: [Teams]
-      summary: Administrator renames a team
-      operationId: updateTeam
-      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamWrite'}}}}
-      responses: {'200': {$ref: '#/components/responses/Team'}, '400': {$ref: '#/components/responses/ValidationError'}, '404': {$ref: '#/components/responses/NotFound'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-    delete:
-      tags: [Teams]
-      summary: Administrator deletes an empty team
-      operationId: deleteTeam
-      responses: {'204': {description: Empty team deleted}, '409': {$ref: '#/components/responses/Conflict'}, '404': {$ref: '#/components/responses/NotFound'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/dashboard:
     get:
       tags: [Dashboard]
@@ -95,19 +66,13 @@ paths:
       tags: [Users]
       summary: List team memberships
       operationId: listUserTeamMemberships
-      responses: {'200': {description: Single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
-    put:
-      tags: [Users]
-      summary: Replace the single team membership and atomically remove old-team assignments
-      operationId: replaceUserTeamMemberships
-      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}
-      responses: {'200': {description: Updated single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembershipReplace'}}}}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'200': {description: Single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembership'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/teams:
     post:
       tags: [Teams]
       summary: Administrator creates a team
       operationId: createTeam
-      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamWrite'}}}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamCreate'}}}}
       responses: {'201': {$ref: '#/components/responses/Team'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     get:
       tags: [Teams]
@@ -262,9 +227,9 @@ components:
         teamId: {type: string, format: uuid}
     LoginRequest: {type: object, required: [email, password], properties: {email: {type: string}, password: {type: string, format: password, writeOnly: true}}}
     KeycloakTokenResponse: {type: object, required: [access_token, token_type, expires_in], properties: {access_token: {type: string}, refresh_token: {type: string}, token_type: {type: string}, expires_in: {type: integer, format: int64}, refresh_expires_in: {type: integer, format: int64}, scope: {type: string}}}
-    TeamWrite: {type: object, required: [name], properties: {name: {type: string, minLength: 1, pattern: '\\S'}}}
+    TeamCreate: {type: object, required: [name], properties: {name: {type: string, minLength: 1, pattern: '\\S'}}}
     Team: {type: object, required: [id, name], properties: {id: {type: string, format: uuid}, name: {type: string, minLength: 1}}}
-    TeamMembershipReplace: {type: object, required: [teamIds], properties: {teamIds: {type: array, minItems: 1, maxItems: 1, items: {type: string, format: uuid}}}}
+    TeamMembership: {type: object, required: [teamIds], properties: {teamIds: {type: array, minItems: 1, maxItems: 1, items: {type: string, format: uuid}}}}
     ProjectCreate:
       type: object
       required: [name, description, teamId]
@@ -289,7 +254,7 @@ components:
     Error: {type: object, required: [code, message], properties: {code: {type: string}, message: {type: string}}}
   responses:
     Team: {description: Team, content: {application/json: {schema: {$ref: '#/components/schemas/Team'}}}}
-    Conflict: {description: Duplicate email or assignment, second assignee, or team still has users/projects, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Conflict: {description: Duplicate email or assignment, or second assignee, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     User: {description: User, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
     UserList: {description: User list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/User'}}}}}
     TeamList: {description: Team list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Team'}}}}}
@@ -325,4 +290,11 @@ x-keycloak: {realm: matriz, clientId: matriz-client, issuer: "https://{keycloak-
 x-session: {absoluteMaximumHours: 8, reauthenticationRequired: true, passwordDelivery: in-person, firstLoginPasswordChange: not-required, idleTimeoutMinutes: 30, accessTokenMinutes: 5, logoutInvalidation: access-token-expiry}
 x-project-access: {roles: [PROJECT_MANAGER, SOFTWARE_ENGINEER], scope: all-projects, administratorVisibility: denied}
 
-x-role-policy: {rolesPerUser: 1, roleChanges: ADMINISTRATOR, commentReaders: [PROJECT_MANAGER, SOFTWARE_ENGINEER], commentWriters: [SOFTWARE_ENGINEER], ownershipTransfer: disabled, profileEditing: disabled}
+x-role-policy: {rolesPerUser: 1, roleAssignmentAtCreation: ADMINISTRATOR, roleChanges: disabled, commentReaders: [PROJECT_MANAGER, SOFTWARE_ENGINEER], commentWriters: [SOFTWARE_ENGINEER], ownershipTransfer: disabled, profileEditing: disabled}
+
+x-resource-lifecycle:
+  users: {create: true, read: true, update: false, delete: false, membershipChanges: false}
+  teams: {create: true, read: true, update: false, delete: false}
+  projects: {create: true, read: true, update: true, delete: true, mutationRole: PROJECT_MANAGER}
+  tasks: {create: true, read: true, update: true, delete: true, mutationRole: PROJECT_MANAGER}
+  comments: {create: true, read: true, update: false, delete: false, deletedByParentCascade: true}

@@ -6,7 +6,7 @@ Provide a simple English-language application for teams to manage projects and t
 
 ## User types and access
 
-- **Administrator:** creates users and manages team membership. Administrators have no project/task content access.
+- **Administrator:** creates and views users and teams; assigns each user one role and one team at creation. Administrators have no project/task content access.
 - **Project Manager:** creates projects and manages projects/tasks they are authorized to access.
 - **Software Engineer:** retains read-only project/task management permissions within accessible resources; only this role may add comments; Project Managers and Software Engineers can read comments.
 
@@ -15,8 +15,8 @@ Projects have an owner derived from the authenticated creator. Backend checks mu
 ## Functional requirements
 
 - **FR-01 Authentication:** Email/password login through Keycloak, logout and authenticated-profile retrieval; invalid/expired sessions receive understandable UI handling.
-- **FR-02 Roles:** Administrator, Project Manager and Software Engineer roles are managed by Keycloak and enforced by the backend.
-- **FR-03 User administration:** Administrators create users through Keycloak, change their exactly-one role and team membership, and delete accounts. Active users belong to exactly one team. Deleting an account removes its assignments, anonymizes the local profile, and preserves projects and comments with “Deleted user” attribution. Administrators manage teams. User and team listings are paginated; users sort by email and teams sort alphabetically by name. Delete only empty teams; reject deletion when users/projects remain.
+- **FR-02 Roles:** Administrator, Project Manager and Software Engineer roles are assigned at account creation, owned by Keycloak and enforced by the backend; no post-creation role-change workflow is in scope.
+- **FR-03 User and team administration:** Administrators create and view/list users and teams. At user creation, assign exactly one Keycloak role and exactly one existing team. User updates and deletion were not requested; this includes email/profile edits, role changes and team-membership changes after creation. Team updates (including renaming) and deletion were not requested. These operations are outside scope. User and team listings are paginated; users sort by email and teams sort alphabetically by name.
 - **FR-04 Projects:** Create, list, view, edit and search accessible projects by name. Project listings are paginated and sort alphabetically by name. Preserve unique identifier and exactly one team; add authenticated creator as owner. Project name is 3–100 characters; description is at most 1000 characters.
 - **FR-05 Project deletion:** Authorized users can delete projects after UI confirmation. Physically cascade deletion to the project's tasks and their comments/assignments; preserve users and teams and leave no orphans. This replaces archival-only behavior.
 - **FR-06 Tasks:** Create, list, view, edit and delete tasks belonging to an existing accessible project. Physical task deletion also deletes its comments and assignment; users and teams remain.
@@ -24,8 +24,8 @@ Projects have an owner derived from the authenticated creator. Backend checks mu
 - **FR-08 Task rules:** Preserve effort values `1, 2, 3, 5, 8, 13`. Adopt statuses `TODO`, `IN_PROGRESS`, `DONE` (default `TODO`) and priorities `LOW`, `MEDIUM`, `HIGH` (default `MEDIUM`). These statuses replace `NOT_STARTED`, `ON_GOING`, `QA`, `DONE`; priority is separate from effort. Reject blank/whitespace-only names and titles and invalid enum values.
 - **FR-09 Team consistency:** A task derives its team from its project, including after a project/team change.
 - **FR-10 Authorization:** Enforce both role permissions and project accessibility on every operation. A client-supplied owner/author is not proof of identity. Enforce the role mapping below; do not infer access from assignee or team membership alone.
-- **FR-11 Assignees:** Associate zero or one Software Engineer from the project's team with a task. Moving a user between teams automatically removes their old-team task assignments as part of the move. Project Managers add/remove assignments. Prevent duplicate task/user pairs; validate existence and eligibility in the backend. Remove invalid assignments on role, team, project-team or task-project changes. Reject a second assignment with HTTP 409; replacement requires removal followed by addition.
-- **FR-12 Comments:** Add and list persistent task comments with content, author and date. Content is 1–2000 characters and not whitespace-only. Backend determines author from authentication and date from its clock. Only Software Engineers may add comments; Project Managers and Software Engineers may read them; editing/deleting comments is not added to scope.
+- **FR-11 Assignees:** Associate zero or one Software Engineer from the project's team with a task. Project Managers add/remove assignments. Prevent duplicate task/user pairs; validate existence and eligibility in the backend. Remove invalid assignments atomically on project-team or task-project changes. Users retain their creation-time role and team; user changes are not an assignment-cleanup workflow. Reject a second assignment with HTTP 409; replacement requires removal followed by addition.
+- **FR-12 Comments:** Add and list persistent task comments with content, author and date. Content is 1–2000 characters and not whitespace-only. Backend determines author from authentication and date from its clock. Only Software Engineers may add comments; Project Managers and Software Engineers may read them; individual comment editing/deletion was not requested and is outside scope. Comments are still physically deleted when their parent task or project is deleted.
 - **FR-13 Filters and home panel:** Task listings are paginated, sort by creation date, and filter by status and priority. Show authenticated user, accessible projects and task counts by status with detail navigation. Counts reflect the relevant authorized dataset, not just a displayed page. General analytics remain out of scope.
 - **FR-14 UI consistency:** Refresh lists, filters and counts after confirmed changes without manual reload. Provide loading, empty, success and error states; retain entered data on failed submissions and prevent repeated submissions while pending. Support different screen widths and shared UI components.
 
@@ -48,13 +48,13 @@ The MVP includes all FRs above, subject to the explicit rules still requiring de
 
 ## Role mapping and latest approved rules
 
-Each user has exactly one application role, assigned by an Administrator in Keycloak. No separate local role authority or implicit role inheritance is introduced.
+Each user has exactly one application role, assigned at creation by an Administrator in Keycloak. No separate local role authority or implicit role inheritance is introduced.
 
-| Keycloak role | Authorized responsibility (subject to resource access) |
-| --- | --- |
-| ADMINISTRATOR | Create accounts; administer teams and exactly-one-team membership. Assign exactly one role per user; no project/task content access. |
-| PROJECT_MANAGER | Create/manage accessible projects and tasks; manage task assignment to zero or one Software Engineer. May read comments, but not create them. |
-| SOFTWARE_ENGINEER | Read accessible projects/tasks; add comments; eligible to be the single optional assignee. No project/task mutation or assignment management. |
+| Keycloak role     | Authorized responsibility (subject to resource access)                                                                                                                       |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ADMINISTRATOR     | Create and view/list users and teams; assign exactly one role and one team per user at creation; no subsequent user/team update or deletion; no project/task content access. |
+| PROJECT_MANAGER   | Create/manage accessible projects and tasks; manage task assignment to zero or one Software Engineer. May read comments, but not create them.                                |
+| SOFTWARE_ENGINEER | Read accessible projects/tasks; add comments; eligible to be the single optional assignee. No project/task mutation or assignment management.                                |
 
 Project/task UUIDs are internal resource identifiers; omit separate business identifiers and UI identifier fields. Physically cascade project/task deletion to dependent tasks, comments and assignments. Timestamps use the server zone and 24-hour `dd/MM/yyyy HH:mm:ss`. shadcn/ui is permitted. The latest decisions supersede the assignment's previous multiple-assignee baseline.
 
@@ -64,7 +64,7 @@ Administrators communicate credentials in person. New accounts are email verifie
 
 Administrator registration requires first and last names. Both are stored in the Keycloak identity and must be nonblank so the new account can complete direct login without a profile-update action.
 
-- **FR-15 Provisioning:** emails are unique without case sensitivity; Keycloak owns identity/email and the application owns team membership. Complete both records before reporting success; reconcile partial failures. Email/profile editing is excluded.
+- **FR-15 Provisioning:** emails are unique without case sensitivity; Keycloak owns identity/email and the application owns team membership. Complete both records before reporting success; reconcile partial failures. All post-creation user updates and deletion are excluded. Compensation for failed provisioning remains part of creation, not an account-deletion feature.
 - **FR-16 Logout:** invalidate the current application session and its API access immediately across replicas. Existing bearer tokens must not bypass session revocation.
 - **NFR-09 Performance:** p95 response time under two seconds. Measurement boundary, concurrent load and dataset size must be documented for formal acceptance under D-08; approximately 500 registered users does not specify concurrent load.
 - **NFR-10 Observability:** the backend, including its integrated HTTP edge, includes Spring Actuator, Micrometer and OTLP export. Compose includes Grafana, Loki and Prometheus for metrics storage under delegated topology choices. Observe HTTP latency/errors, JVM, database pools and limiter health.
