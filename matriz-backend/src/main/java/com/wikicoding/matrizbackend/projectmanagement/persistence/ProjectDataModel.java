@@ -33,4 +33,13 @@ public class ProjectDataModel {
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
+    public void changeDetails(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    public void assignTeamToProject(UUID teamId) {
+        this.teamId = teamId;
+    }
+
 }

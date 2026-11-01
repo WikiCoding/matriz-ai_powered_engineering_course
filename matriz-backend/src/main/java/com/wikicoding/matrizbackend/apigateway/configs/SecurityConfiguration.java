@@ -80,6 +80,16 @@ public class SecurityConfiguration {
                                     && roles.contains("ADMINISTRATOR");
                             return new org.springframework.security.authorization.AuthorizationDecision(administrator);
                         })
+                        .requestMatchers("/api/v1/projects", "/api/v1/projects/*")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && (roles.contains("PROJECT_MANAGER") || (HttpMethod.GET.matches(context.getRequest().getMethod())
+                                            && roles.contains("SOFTWARE_ENGINEER")));
+                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                        })
                         .anyRequest().authenticated())
                 .cors(cors -> {})
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))
@@ -94,8 +104,8 @@ public class SecurityConfiguration {
                 try {
                     chain.doFilter(request, response);
                 } finally {
-                    log.info("HTTP {} {} from {} with body {} -> {}", request.getMethod(), request.getRequestURI(),
-                            request.getRemoteAddr(), request.getContentType(), response.getStatus());
+                    log.info("HTTP {} {} from {} -> {}", request.getMethod(), request.getRequestURI(),
+                            request.getRemoteAddr(), response.getStatus());
                 }
             }
         };

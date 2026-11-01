@@ -25,6 +25,13 @@ public class UserManagement {
         return new ManagedUser(user.getId(), user.getKeycloakSubject(), user.getEmail(), user.getTeamId());
     }
 
+    @Transactional(readOnly = true)
+    public ManagedUser requireActiveSubject(String subject) {
+        UserDataModel user = users.findByKeycloakSubjectAndDeletedFalse(subject)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Active profile required"));
+        return new ManagedUser(user.getId(), user.getKeycloakSubject(), user.getEmail(), user.getTeamId());
+    }
+
     @Transactional
     public ManagedUser moveToTeam(UUID id, UUID teamId) {
         if (teamId == null || !teams.exists(teamId)) {

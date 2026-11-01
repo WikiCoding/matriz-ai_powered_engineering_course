@@ -117,10 +117,10 @@ paths:
   /api/v1/projects:
     get:
       tags: [Projects]
-      summary: List accessible projects, optionally searched by name
+      summary: List accessible projects alphabetically by name
       operationId: listProjects
-      parameters: [{ $ref: '#/components/parameters/Search' }]
-      responses: {'200': {$ref: '#/components/responses/ProjectList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
+      responses: {'200': {$ref: '#/components/responses/ProjectList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     post:
       tags: [Projects]
       summary: Create project owned by authenticated user
@@ -224,6 +224,8 @@ components:
     ProjectId: {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
     TaskId: {name: taskId, in: path, required: true, schema: {type: string, format: uuid}}
     Search: {name: search, in: query, schema: {type: string, maxLength: 100}}
+    Page: {name: page, in: query, description: Zero-based page index, schema: {type: integer, minimum: 0, default: 0}}
+    Size: {name: size, in: query, description: Items per page, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
     StatusFilter: {name: status, in: query, schema: {$ref: '#/components/schemas/Status'}}
     PriorityFilter: {name: priority, in: query, schema: {$ref: '#/components/schemas/Priority'}}
   schemas:
@@ -283,7 +285,19 @@ components:
     UserList: {description: User list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/User'}}}}}
     TeamList: {description: Team list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Team'}}}}}
     Project: {description: Project, content: {application/json: {schema: {$ref: '#/components/schemas/Project'}}}}
-    ProjectList: {description: Project list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Project'}}}}}
+    ProjectList:
+      description: Projects ordered by name ascending, then ID ascending
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [content, totalElements, totalPages, number, size]
+            properties:
+              content: {type: array, items: {$ref: '#/components/schemas/Project'}}
+              totalElements: {type: integer, format: int64, minimum: 0}
+              totalPages: {type: integer, minimum: 0}
+              number: {type: integer, minimum: 0}
+              size: {type: integer, minimum: 1}
     Task: {description: Task, content: {application/json: {schema: {$ref: '#/components/schemas/Task'}}}}
     TaskList: {description: Task list, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Task'}}}}}
     Assignment: {description: Assignment, content: {application/json: {schema: {$ref: '#/components/schemas/Assignment'}}}}

@@ -10,4 +10,5 @@ public interface UserRepository extends JpaRepository<UserDataModel, UUID> {
     boolean existsByTeamId(UUID teamId);
 
     Optional<UserDataModel> findByIdAndDeletedFalse(UUID id);
+    Optional<UserDataModel> findByKeycloakSubjectAndDeletedFalse(String subject);
 }
