@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { projectPath, assigneeOptionsPath } from "../api/projects";
+import { userDisplayPath } from "../api/users";
 import {
   taskPath,
   assignmentsPath,
@@ -38,6 +39,12 @@ function TaskDetail({ token, role }) {
       token,
     ),
     assignments = useData(assignmentsPath(taskId), token, version),
+    assigneeDisplay = useData(
+      assignments.data?.[0]?.userId
+        ? userDisplayPath(assignments.data[0].userId)
+        : null,
+      token,
+    ),
     comments = useData(commentsPath(taskId), token, version),
     options = useData(
       manager && task.data ? assigneeOptionsPath(task.data.projectId) : null,
@@ -112,6 +119,7 @@ function TaskDetail({ token, role }) {
           task.error ||
           project.error ||
           assignments.error ||
+          assigneeDisplay.error ||
           comments.error ||
           options.error ||
           mutation.error
@@ -176,9 +184,9 @@ function TaskDetail({ token, role }) {
               {assignments.data?.length ? (
                 <div className="assignment">
                   <span>
-                    {options.data?.find(
-                      (o) => o.id === assignments.data[0].userId,
-                    )?.displayName || "Assigned engineer"}
+                    {assigneeDisplay.loading
+                      ? "Loading assignee…"
+                      : assigneeDisplay.data?.displayName || "Assigned engineer"}
                   </span>
                   {manager && (
                     <button disabled={mutation.pending} onClick={unassign}>
