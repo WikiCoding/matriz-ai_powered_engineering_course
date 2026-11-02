@@ -1,6 +1,6 @@
 package com.wikicoding.matrizbackend.user.persistence;
 
-import com.wikicoding.matrizbackend.user.domain.User.ProvisioningStatus;
+import com.wikicoding.matrizbackend.user.domain.ProvisioningStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

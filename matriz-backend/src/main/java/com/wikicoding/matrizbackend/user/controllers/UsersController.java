@@ -1,13 +1,17 @@
 package com.wikicoding.matrizbackend.user.controllers;
 
+import com.wikicoding.matrizbackend.user.Profile;
+import com.wikicoding.matrizbackend.user.UserAccounts;
+import com.wikicoding.matrizbackend.user.dtos.Display;
+import com.wikicoding.matrizbackend.user.dtos.KeycloakTokenResponse;
 import com.wikicoding.matrizbackend.user.dtos.RegisterRequest;
 import com.wikicoding.matrizbackend.user.dtos.UserItem;
 import com.wikicoding.matrizbackend.user.dtos.UserPage;
-import com.wikicoding.matrizbackend.user.dtos.KeycloakTokenResponse;
-import com.wikicoding.matrizbackend.user.Profile;
-import com.wikicoding.matrizbackend.user.UserAccounts;
 import com.wikicoding.matrizbackend.user.services.UserService;
+import com.wikicoding.matrizbackend.user.services.UserDisplayService;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -35,23 +40,42 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/v1/users")
 public class UsersController {
     private final UserService users;
+    private final UserDisplayService userDisplayService;
     private final WebClient keycloakWebClient;
     private final UserAccounts userService;
     private final String realm;
     private final String provisioningClientId;
     private final String provisioningClientSecret;
 
-    public UsersController(UserService users, @Qualifier("keycloakWebClient") WebClient keycloakWebClient,
+    public UsersController(UserService users, UserDisplayService userDisplayService,
+            @Qualifier("keycloakWebClient") WebClient keycloakWebClient,
             UserAccounts userService,
             @Value("${keycloak.realm:matriz}") String realm,
             @Value("${keycloak.provisioning-client-id:matriz-provisioning}") String provisioningClientId,
             @Value("${keycloak.provisioning-client-secret:}") String provisioningClientSecret) {
         this.users = users;
+        this.userDisplayService = userDisplayService;
         this.keycloakWebClient = keycloakWebClient;
         this.userService = userService;
         this.realm = realm;
         this.provisioningClientId = provisioningClientId;
         this.provisioningClientSecret = provisioningClientSecret;
+    }
+
+    @GetMapping("/me")
+    public com.wikicoding.matrizbackend.user.dtos.Profile me(JwtAuthenticationToken principal) {
+        var user = users.requireActiveSubject(principal.getName());
+
+        var identity = userDisplayService.display(user.id());
+
+        String role = principal.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                && access.get("roles") instanceof Collection<?> roles
+                ? roles.stream().map(Object::toString).filter(value -> value.equals("ADMINISTRATOR")
+                        || value.equals("PROJECT_MANAGER") || value.equals("SOFTWARE_ENGINEER"))
+                .findFirst().orElse("") : "";
+
+        return new com.wikicoding.matrizbackend.user.dtos.Profile(user.id(), identity.displayName(),
+                user.email(), user.teamId(), role);
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -70,6 +94,20 @@ public class UsersController {
                         .onErrorResume(failure -> deleteKeycloakUser(token, keycloakUserId)
                                 .onErrorResume(deleteFailure -> Mono.empty())
                                 .then(Mono.error(asProvisioningFailure(failure))))));
+    }
+
+    @GetMapping
+    public UserPage findAllUsers(@RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(defaultValue = "20") int size) {
+        var result = users.findAllUsersPagedAndSorted(page, size);
+        return new UserPage(result.getContent().stream()
+                .map(user -> new UserItem(user.id(), user.email(), user.teamId())).toList(),
+                result.getTotalElements(), result.getTotalPages(), result.getNumber(), result.getSize());
+    }
+
+    @GetMapping("/{userId}/display")
+    public Display display(@PathVariable UUID userId) {
+        return userDisplayService.display(userId);
     }
 
     private Mono<KeycloakTokenResponse> provisioningToken() {
@@ -164,15 +202,6 @@ public class UsersController {
             return new ResponseStatusException(response.getStatusCode(), "User provisioning failed");
         }
         return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "User provisioning failed");
-    }
-
-    @GetMapping
-    public UserPage findAllUsers(@RequestParam(defaultValue = "0") int page,
-                                 @RequestParam(defaultValue = "20") int size) {
-        var result = users.findAllUsersPagedAndSorted(page, size);
-        return new UserPage(result.getContent().stream()
-                .map(user -> new UserItem(user.id(), user.email(), user.teamId())).toList(),
-                result.getTotalElements(), result.getTotalPages(), result.getNumber(), result.getSize());
     }
 
 }

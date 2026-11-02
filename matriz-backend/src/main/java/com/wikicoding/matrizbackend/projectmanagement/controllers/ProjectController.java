@@ -1,5 +1,7 @@
 package com.wikicoding.matrizbackend.projectmanagement.controllers;
 
+import com.wikicoding.matrizbackend.projectmanagement.AssigneeOptionsLookup;
+import com.wikicoding.matrizbackend.projectmanagement.AssigneeOptionsLookup.Option;
 import com.wikicoding.matrizbackend.projectmanagement.dtos.projects.ProjectResponse;
 import com.wikicoding.matrizbackend.projectmanagement.dtos.projects.ProjectPageResponse;
 import com.wikicoding.matrizbackend.projectmanagement.dtos.projects.ProjectRequest;
@@ -9,6 +11,7 @@ import com.wikicoding.matrizbackend.projectmanagement.domain.task.Status;
 import com.wikicoding.matrizbackend.projectmanagement.domain.task.Priority;
 import com.wikicoding.matrizbackend.projectmanagement.dtos.tasks.TaskPageResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProjectController {
     private final ProjectService projectService;
     private final TaskService taskService;
+    private final AssigneeOptionsLookup assigneeOptionsLookup;
 
     @GetMapping
     public ProjectPageResponse findAll(@RequestParam(defaultValue = "0") int page,
@@ -32,6 +36,12 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     public ProjectResponse findById(@PathVariable UUID projectId) {
         return ProjectResponse.from(projectService.findProjectById(projectId));
+    }
+
+    @GetMapping("/{projectId}/assignee-options")
+    public List<Option> findAssigneeOptions(@PathVariable UUID projectId) {
+        var project = projectService.findProjectById(projectId);
+        return assigneeOptionsLookup.eligibleForTeam(project.getTeamId());
     }
 
     @PostMapping

@@ -5,10 +5,11 @@ import com.wikicoding.matrizbackend.user.UserAccounts;
 import com.wikicoding.matrizbackend.user.persistence.UserDataModel;
 import com.wikicoding.matrizbackend.user.persistence.UserRepository;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import com.wikicoding.matrizbackend.user.domain.User.ProvisioningStatus;
+import com.wikicoding.matrizbackend.user.domain.ProvisioningStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,13 @@ public class UserService implements UserAccounts {
         UserDataModel user = userRepository.findByKeycloakSubjectAndDeletedFalse(subject)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Active profile required"));
         return new ManagedUser(user.getId(), user.getKeycloakSubject(), user.getEmail(), user.getTeamId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ManagedUser> findActiveTeamMembers(UUID teamId) {
+        return userRepository.findByTeamIdAndDeletedFalseAndProvisioningStatus(teamId, ProvisioningStatus.COMPLETED)
+                .stream().map(user -> new ManagedUser(user.getId(), user.getKeycloakSubject(),
+                        user.getEmail(), user.getTeamId())).toList();
     }
 
     public record ManagedUser(UUID id, String subject, String email, UUID teamId) {}

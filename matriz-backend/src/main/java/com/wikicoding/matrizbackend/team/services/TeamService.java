@@ -39,4 +39,11 @@ public class TeamService {
                 .map(stored -> new Team(stored.getId(), stored.getName()));
     }
 
+    @Transactional(readOnly = true)
+    public Team findTeamById(UUID teamId) {
+        return teamRepository.findById(teamId)
+                .map(stored -> new Team(stored.getId(), stored.getName()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+    }
+
 }

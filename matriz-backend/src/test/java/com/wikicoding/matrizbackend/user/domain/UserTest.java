@@ -20,14 +20,14 @@ class UserTest {
 
         // Act
         User user = new User(id, null, "engineer@example.com", teamId,
-                User.ProvisioningStatus.PENDING, correlationId);
+                ProvisioningStatus.PENDING, correlationId);
 
         // Assert
         assertThat(user.getId()).isEqualTo(id);
         assertThat(user.getKeycloakSubject()).isNull();
         assertThat(user.getEmail()).isEqualTo("engineer@example.com");
         assertThat(user.getTeamId()).isEqualTo(teamId);
-        assertThat(user.getProvisioningStatus()).isEqualTo(User.ProvisioningStatus.PENDING);
+        assertThat(user.getProvisioningStatus()).isEqualTo(ProvisioningStatus.PENDING);
         assertThat(user.getProvisioningCorrelationId()).isEqualTo(correlationId);
     }
 
@@ -40,7 +40,7 @@ class UserTest {
 
         // Act
         ThrowingCallable action = () -> new User(id, null, "engineer@example.com", teamId,
-                User.ProvisioningStatus.COMPLETED, correlationId);
+                ProvisioningStatus.COMPLETED, correlationId);
 
         // Assert
         assertThatIllegalArgumentException().isThrownBy(action)
@@ -56,15 +56,15 @@ class UserTest {
 
         // Act
         ThrowingCallable missingId = () -> new User(null, "subject", "engineer@example.com", teamId,
-                User.ProvisioningStatus.COMPLETED, correlationId);
+                ProvisioningStatus.COMPLETED, correlationId);
         ThrowingCallable missingEmail = () -> new User(id, "subject", null, teamId,
-                User.ProvisioningStatus.COMPLETED, correlationId);
+                ProvisioningStatus.COMPLETED, correlationId);
         ThrowingCallable missingTeam = () -> new User(id, "subject", "engineer@example.com", null,
-                User.ProvisioningStatus.COMPLETED, correlationId);
+                ProvisioningStatus.COMPLETED, correlationId);
         ThrowingCallable missingStatus = () -> new User(id, "subject", "engineer@example.com", teamId,
                 null, correlationId);
         ThrowingCallable missingCorrelation = () -> new User(id, "subject", "engineer@example.com", teamId,
-                User.ProvisioningStatus.COMPLETED, null);
+                ProvisioningStatus.COMPLETED, null);
 
         // Assert
         assertThatNullPointerException().isThrownBy(missingId).withMessage("id is required");

@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
+import java.util.UUID;
 import java.util.List;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TeamController {
 
     private final TeamService teamService;
+
+    @GetMapping("/{teamId}")
+    public TeamResponse findById(@PathVariable UUID teamId) {
+        return TeamResponse.from(teamService.findTeamById(teamId));
+    }
 
     @GetMapping
     public TeamPage findAllTeams(@RequestParam(defaultValue = "0") int page,

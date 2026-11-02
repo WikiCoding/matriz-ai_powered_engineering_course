@@ -1,6 +1,6 @@
 package com.wikicoding.matrizbackend.user;
 
-import com.wikicoding.matrizbackend.user.domain.User.ProvisioningStatus;
+import com.wikicoding.matrizbackend.user.domain.ProvisioningStatus;
 import com.wikicoding.matrizbackend.user.persistence.UserDataModel;
 import com.wikicoding.matrizbackend.user.persistence.UserRepository;
 import java.util.Optional;

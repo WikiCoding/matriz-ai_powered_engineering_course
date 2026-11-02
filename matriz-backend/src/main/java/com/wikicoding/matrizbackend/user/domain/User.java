@@ -33,9 +33,4 @@ public class User {
         }
         this.keycloakSubject = keycloakSubject;
     }
-
-    public enum ProvisioningStatus {
-        PENDING,
-        COMPLETED
-    }
 }

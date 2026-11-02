@@ -40,6 +40,12 @@ paths:
       summary: Accessible projects and task counts by status
       operationId: getDashboard
       responses: {'200': {$ref: '#/components/responses/Dashboard'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/users/me:
+    get:
+      tags: [Users]
+      summary: Read the authenticated user's profile for the panel
+      operationId: getMyProfile
+      responses: {'200': {description: Current profile, content: {application/json: {schema: {$ref: '#/components/schemas/MyProfile'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/users:
     get:
       tags: [Users]
@@ -61,6 +67,14 @@ paths:
       summary: List team memberships
       operationId: listUserTeamMemberships
       responses: {'200': {description: Single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembership'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /api/v1/users/{userId}/display:
+    parameters: [{ $ref: '#/components/parameters/UserId' }]
+    get:
+      tags: [Users]
+      summary: Read a user's display name for owner, assignee, or comment attribution
+      operationId: getUserDisplay
+      description: Project Managers and Software Engineers may read active users; this does not grant user administration.
+      responses: {'200': {description: User display, content: {application/json: {schema: {$ref: '#/components/schemas/UserDisplay'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Identity provider unavailable}}
   /api/v1/teams:
     post:
       tags: [Teams]
@@ -74,6 +88,13 @@ paths:
       operationId: listTeams
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
       responses: {'200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/teams/{teamId}:
+    parameters: [{name: teamId, in: path, required: true, schema: {type: string, format: uuid}}]
+    get:
+      tags: [Teams]
+      summary: Read a team name for project and task display
+      operationId: getTeam
+      responses: {'200': {$ref: '#/components/responses/Team'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/projects:
     get:
       tags: [Projects]
@@ -105,6 +126,14 @@ paths:
       summary: Delete an accessible project
       operationId: deleteProject
       responses: {'204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/v1/projects/{projectId}/assignee-options:
+    parameters: [{ $ref: '#/components/parameters/ProjectId' }]
+    get:
+      tags: [Assignments]
+      summary: List eligible Software Engineers in the project's team
+      operationId: listAssigneeOptions
+      description: Project Manager assignment selector; results are display choices, not assignments. The assignment POST still validates eligibility.
+      responses: {'200': {description: Eligible users ordered by display name and ID, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/AssigneeOption'}}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Identity provider unavailable}}
   /api/v1/projects/{projectId}/tasks:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
@@ -205,6 +234,9 @@ components:
       type: object
       required: [id, email]
       properties: {id: {type: string, format: uuid}, email: {type: string, format: email}, teamId: {type: string, format: uuid}, displayName: {type: string}, role: {$ref: '#/components/schemas/Role'}}
+    MyProfile: {type: object, required: [id, displayName, email, teamId, role], properties: {id: {type: string, format: uuid}, displayName: {type: string}, email: {type: string, format: email}, teamId: {type: string, format: uuid}, role: {$ref: '#/components/schemas/Role'}}}
+    UserDisplay: {type: object, required: [id, displayName, email], properties: {id: {type: string, format: uuid}, displayName: {type: string}, email: {type: string, format: email}}}
+    AssigneeOption: {type: object, required: [id, displayName], properties: {id: {type: string, format: uuid}, displayName: {type: string}}}
     UserCreate:
       type: object
       required: [email, role, teamId]

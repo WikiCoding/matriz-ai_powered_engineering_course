@@ -1,6 +1,6 @@
 # Revised MVP wireframe
 
-[Open the wireframe board](wireframe.png). Updated 2026-10-29; a visual design artifact, not implemented UI.
+[Open the wireframe board](wireframe.png). Updated 2026-11-02; a visual design artifact, not implemented UI.
 
 ## Screens and reusable patterns
 
@@ -30,4 +30,4 @@ Edited with the built-in image-generation tool from the previous wireframe, then
 
 ## Latest decision precedence
 
-The PNG has not been regenerated and may show project-name search, multiple assignees, older dates, or list controls that predate pagination/sorting. Project-name search is out of scope; these notes and requirements.md take precedence. Physical deletion is confirmed; dependent tasks, comments and assignments are deleted, preserving users and teams. shadcn/ui is an approved UI option.
+The regenerated PNG omits project-name search and visible business IDs, and shows a single optional assignee. Pagination and sorting requirements in these notes still govern the eventual UI. Physical deletion is confirmed; dependent tasks, comments and assignments are deleted, preserving users and teams. shadcn/ui is an approved UI option.

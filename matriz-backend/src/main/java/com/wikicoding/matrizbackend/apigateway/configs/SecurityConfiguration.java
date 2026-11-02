@@ -72,6 +72,35 @@ public class SecurityConfiguration {
                         .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*/display")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && (roles.contains("PROJECT_MANAGER") || roles.contains("SOFTWARE_ENGINEER"));
+                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                        })
+                        .requestMatchers(HttpMethod.GET, "/api/v1/teams", "/api/v1/teams/*")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && (roles.contains("ADMINISTRATOR") || roles.contains("PROJECT_MANAGER")
+                                            || roles.contains("SOFTWARE_ENGINEER"));
+                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                        })
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/assignee-options")
+                        .access((authentication, context) -> {
+                            var principal = authentication.get();
+                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
+                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
+                                    && access.get("roles") instanceof Collection<?> roles
+                                    && roles.contains("PROJECT_MANAGER");
+                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                        })
                         .requestMatchers(HttpMethod.GET, "/api/v1/dashboard")
                         .access((authentication, context) -> {
                             var principal = authentication.get();

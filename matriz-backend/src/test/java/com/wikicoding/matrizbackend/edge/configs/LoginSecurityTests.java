@@ -15,6 +15,7 @@ import com.wikicoding.matrizbackend.user.controllers.UsersController;
 import com.wikicoding.matrizbackend.user.Profile;
 import com.wikicoding.matrizbackend.user.UserAccounts;
 import com.wikicoding.matrizbackend.user.services.UserService;
+import com.wikicoding.matrizbackend.user.services.UserDisplayService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ class LoginSecurityTests {
     void corsConfigurationUsesConfiguredValues() {
         // Arrange: fixtures and dependency state are reset in resetState().
         var source = context.getBean("corsConfigurationSource", CorsConfigurationSource.class);
-        var exchange = new org.springframework.mock.web.MockHttpServletRequest("GET", "/api/v1/me");
+        var exchange = new org.springframework.mock.web.MockHttpServletRequest("GET", "/api/v1/users/me");
         // Act
         var cors = source.getCorsConfiguration(exchange);
         // Assert
@@ -160,10 +161,32 @@ class LoginSecurityTests {
     void protectedRoutesAndLogoutRequireAuthentication() {
         // Arrange: fixtures and dependency state are reset in resetState().
         // Act / Assert: execute the workflow and verify responses/state.
-        client.get().uri("/api/v1/me").exchange().expectStatus().isUnauthorized();
+        client.get().uri("/api/v1/users/me").exchange().expectStatus().isUnauthorized();
         logout(null, "refresh").expectStatus().isUnauthorized();
         logout("invalid", "refresh").expectStatus().isUnauthorized();
         assertEquals(0, state.logoutCalls.get());
+    }
+
+    @Test
+    void currentProfileIsServedByUsersController() {
+        // Arrange
+        var userId = java.util.UUID.randomUUID();
+        var teamId = java.util.UUID.randomUUID();
+        var users = context.getBean(UserService.class);
+        var display = context.getBean(UserDisplayService.class);
+        when(users.requireActiveSubject("test-user")).thenReturn(new UserService.ManagedUser(
+                userId, "test-user", "admin@example.test", teamId));
+        when(display.display(userId)).thenReturn(new com.wikicoding.matrizbackend.user.dtos.Display(
+                userId, "Admin User", "admin@example.test"));
+
+        // Act / Assert
+        client.get().uri("/api/v1/users/me").headers(h -> h.setBearerAuth("admin"))
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.id").isEqualTo(userId.toString())
+                .jsonPath("$.displayName").isEqualTo("Admin User")
+                .jsonPath("$.email").isEqualTo("admin@example.test")
+                .jsonPath("$.role").isEqualTo("ADMINISTRATOR")
+                .jsonPath("$.teamId").isEqualTo(teamId.toString());
     }
 
     @Test
@@ -245,7 +268,7 @@ class LoginSecurityTests {
     }
 
     private WebTestClient.ResponseSpec protectedRequest(String token) {
-        return client.get().uri("/api/v1/me").headers(h -> h.setBearerAuth(token)).exchange();
+        return client.get().uri("/api/v1/test/protected").headers(h -> h.setBearerAuth(token)).exchange();
     }
 
     private WebTestClient.ResponseSpec logout(String token, String refresh) {
@@ -277,7 +300,7 @@ class LoginSecurityTests {
 
     @RestController
     static class ProtectedController {
-        @GetMapping("/api/v1/me")
+        @GetMapping("/api/v1/test/protected")
         String me() { return "authenticated"; }
     }
 
@@ -334,8 +357,12 @@ class LoginSecurityTests {
         @Bean
         UserService userService() { return mock(UserService.class); }
         @Bean
-        UsersController usersController(UserService userService, WebClient keycloakWebClient, UserAccounts userAccounts) {
-            return new UsersController(userService, keycloakWebClient, userAccounts, "matriz", "matriz-provisioning",
+        UserDisplayService userDisplayService() { return mock(UserDisplayService.class); }
+        @Bean
+        UsersController usersController(UserService userService, UserDisplayService userDisplayService,
+                WebClient keycloakWebClient, UserAccounts userAccounts) {
+            return new UsersController(userService, userDisplayService, keycloakWebClient, userAccounts,
+                    "matriz", "matriz-provisioning",
                     "test-provisioning-secret");
         }
     }
