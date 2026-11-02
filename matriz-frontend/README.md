@@ -1,70 +1,33 @@
-# Getting Started with Create React App
+# Matriz frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React UI for the revised MVP wireframe. The application includes sign-in, a role-specific home, paginated project and task lists, project/task editing, assignment and comments, and administrator user/team creation and lists. The backend remains responsible for authorization and validation.
 
-## Available Scripts
+## Source layout
 
-In the project directory, you can run:
+- `src/App.js` defines pages, routes, and role-based route guards.
+- `src/sessions/` owns session storage, profile loading, sign-in, sign-out, and the authenticated page boundary.
+- `src/pages/` contains one file per screen: login, home, projects, project detail, task detail, users, and teams.
+- `src/components/` contains shared presentation controls and forms.
+- `src/api/` contains the HTTP client and feature-specific endpoint functions and paths.
+- `src/hooks/` contains reusable loading and mutation state.
+- `src/constants.js` contains task choices and empty form values.
 
-### `npm start`
+## Local development
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Start the backend and its supporting services from the repository root using the commands in the root README, then run from this directory:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```powershell
+npm.cmd ci
+npm.cmd start
+```
 
-### `npm test`
+The development server runs at `http://localhost:3000` and proxies `/api/v1` requests to `http://localhost:8080`. To point a separately hosted frontend at another backend, set `REACT_APP_API_BASE_URL` before building. That backend must allow the frontend origin. The frontend service is currently commented out in Compose, so it is started separately for local use.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Checks
 
-### `npm run build`
+```powershell
+npm.cmd test -- --watchAll=false
+npm.cmd run build
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Playwright is selected in the architecture but has not yet been configured in this package. Browser journeys must be checked manually until that setup exists.
