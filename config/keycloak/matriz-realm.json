@@ -48,6 +48,7 @@
       }
     },
     {
+      "id": "c81ee4a9-292b-49fb-99bf-f5fd6b5cf5b5",
       "username": "admin@matriz.local",
       "email": "admin@matriz.local",
       "firstName": "Matriz",
@@ -56,11 +57,12 @@
       "emailVerified": true,
       "requiredActions": [],
       "credentials": [
-        { "type": "password", "value": "MatrizAdmin123!", "temporary": false }
+        { "type": "password", "value": "123456", "temporary": false }
       ],
       "realmRoles": ["ADMINISTRATOR"]
     },
     {
+      "id": "16f3e507-4a2b-43a0-9ad1-df6ea61bb511",
       "username": "manager@matriz.local",
       "email": "manager@matriz.local",
       "firstName": "Matriz",
@@ -69,11 +71,12 @@
       "emailVerified": true,
       "requiredActions": [],
       "credentials": [
-        { "type": "password", "value": "MatrizManager123!", "temporary": false }
+        { "type": "password", "value": "123456", "temporary": false }
       ],
       "realmRoles": ["PROJECT_MANAGER"]
     },
     {
+      "id": "d811ff06-d3ba-4dda-af09-f0ef1069f045",
       "username": "engineer@matriz.local",
       "email": "engineer@matriz.local",
       "firstName": "Matriz",
@@ -82,7 +85,7 @@
       "emailVerified": true,
       "requiredActions": [],
       "credentials": [
-        { "type": "password", "value": "MatrizEngineer123!", "temporary": false }
+        { "type": "password", "value": "123456", "temporary": false }
       ],
       "realmRoles": ["SOFTWARE_ENGINEER"]
     }

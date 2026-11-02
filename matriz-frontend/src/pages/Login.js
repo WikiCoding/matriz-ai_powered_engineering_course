@@ -6,6 +6,7 @@ import { useMutation } from "../hooks/useMutation";
 function Login({ login, expired }) {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const mutation = useMutation();
   return (
     <main className="login-page">
@@ -38,10 +39,18 @@ function Login({ login, expired }) {
           label="Password"
           value={password}
           onChange={setPassword}
-          type="password"
+          type={showPassword ? "text" : "password"}
           required
           autoComplete="current-password"
         />
+        <button
+          type="button"
+          className="password-toggle"
+          aria-pressed={showPassword}
+          onClick={() => setShowPassword((visible) => !visible)}
+        >
+          {showPassword ? "Hide password" : "Show password"}
+        </button>
         <button className="primary wide" disabled={mutation.pending}>
           {mutation.pending ? "Signing in…" : "Sign in"}
         </button>

@@ -25,7 +25,7 @@ export function SessionProvider({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!tokens) return;
+    if (!tokens || profile) return;
     let active = true;
     getProfile(tokens.access_token)
       .then((user) => {
@@ -44,14 +44,14 @@ export function SessionProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [tokens]);
+  }, [tokens, profile]);
 
   async function login(email, password) {
     const nextTokens = await signIn(email, password);
     const user = await getProfile(nextTokens.access_token);
     saveSession(nextTokens);
-    setTokens(nextTokens);
     setProfile(user);
+    setTokens(nextTokens);
     setError("");
     setExpired(false);
     navigate("/");

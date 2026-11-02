@@ -18,6 +18,30 @@ test('signs in and shows accessible project counts', async () => {
   expect(await screen.findByText('Welcome, Alex')).toBeInTheDocument();
   await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument());
   expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/auth/login'), expect.objectContaining({ method: 'POST' }));
+  expect(fetch.mock.calls.filter(([url]) => url.includes('/users/me'))).toHaveLength(1);
+});
+
+test('can show and hide the login password without submitting', () => {
+  // Arrange
+  render(<App />);
+  const password = screen.getByLabelText('Password');
+  fireEvent.change(password, { target: { value: 'secret' } });
+
+  // Act
+  fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+
+  // Assert
+  expect(password).toHaveAttribute('type', 'text');
+  expect(password).toHaveValue('secret');
+  expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
+  expect(fetch).not.toHaveBeenCalled();
+
+  // Act
+  fireEvent.click(screen.getByRole('button', { name: 'Hide password' }));
+
+  // Assert
+  expect(password).toHaveAttribute('type', 'password');
+  expect(password).toHaveValue('secret');
 });
 
 test('administrator home offers only administration navigation', async () => {

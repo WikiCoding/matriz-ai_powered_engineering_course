@@ -62,3 +62,13 @@ CREATE TABLE comment (
 );
 CREATE INDEX comment_task_created_idx ON comment (task_id, created_at);
 CREATE INDEX comment_author_idx ON comment (author_id);
+
+-- Match the fixed subjects in config/keycloak/matriz-realm.json for fresh local imports.
+INSERT INTO team (id, name)
+VALUES ('e0a987ab-bff0-4de8-b320-04b1f42899aa', 'Demo Team');
+
+INSERT INTO app_user (id, keycloak_subject, email, team_id, provisioning_status, provisioning_correlation_id)
+VALUES
+    ('c81ee4a9-292b-49fb-99bf-f5fd6b5cf5b5', 'c81ee4a9-292b-49fb-99bf-f5fd6b5cf5b5', 'admin@matriz.local', 'e0a987ab-bff0-4de8-b320-04b1f42899aa', 'COMPLETED', '13d5840a-a651-4c22-9da1-44632f7660ca'),
+    ('16f3e507-4a2b-43a0-9ad1-df6ea61bb511', '16f3e507-4a2b-43a0-9ad1-df6ea61bb511', 'manager@matriz.local', 'e0a987ab-bff0-4de8-b320-04b1f42899aa', 'COMPLETED', '7b413d1a-4ecd-49a0-b148-f04217346dad'),
+    ('d811ff06-d3ba-4dda-af09-f0ef1069f045', 'd811ff06-d3ba-4dda-af09-f0ef1069f045', 'engineer@matriz.local', 'e0a987ab-bff0-4de8-b320-04b1f42899aa', 'COMPLETED', 'ea613ae3-1c8b-4ef0-87f5-bba54e2c84cc');

@@ -519,6 +519,21 @@ tr:last-child td {
     margin-top: 20px
 }
 
+.password-toggle {
+    display: block;
+    margin: 8px 0 20px auto;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    color: var(--blue);
+    cursor: pointer
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px
+}
+
 .logo-mark {
     width: 46px;
     height: 46px;

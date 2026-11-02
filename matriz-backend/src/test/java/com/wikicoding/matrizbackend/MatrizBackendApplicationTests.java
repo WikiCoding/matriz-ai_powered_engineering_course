@@ -35,9 +35,19 @@ class MatrizBackendApplicationTests {
 
     @Test
     void startupMigratesEmptyDatabaseAndRepeatMigrationIsANoOp() {
-        assertThat(flyway.info().applied()).hasSize(1);
+        // Arrange
+        UUID demoTeam = UUID.fromString("e0a987ab-bff0-4de8-b320-04b1f42899aa");
+
+        // Act
+        var applied = flyway.info().applied();
+        var repeated = flyway.migrate();
+
+        // Assert
+        assertThat(applied).hasSize(2);
         flyway.validate();
-        assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(repeated.migrationsExecuted).isZero();
+        assertThat(count("team", "id", demoTeam)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE team_id = ? AND provisioning_status = 'COMPLETED' AND keycloak_subject = id::text", Integer.class, demoTeam)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT to_regclass('public.event_publication') IS NULL", Boolean.class)).isTrue();
         assertThat(jdbc.queryForObject("SELECT to_regclass('public.audit_record') IS NULL", Boolean.class)).isTrue();
     }
@@ -88,18 +98,25 @@ class MatrizBackendApplicationTests {
 
     @Test
     void migrationRetainsExistingRowsAndDetectsChecksumChanges() {
+        // Arrange
         String schema = "upgrade_test";
         Flyway initial = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
                 .schemas(schema).defaultSchema(schema).target("1").load();
         initial.migrate();
         UUID id = UUID.randomUUID();
         jdbc.update("INSERT INTO upgrade_test.team VALUES (?, 'Preserved')", id);
+
+        // Act
         Flyway latest = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
                 .schemas(schema).defaultSchema(schema).load();
-        assertThat(latest.migrate().migrationsExecuted).isZero();
+        var migrated = latest.migrate();
+
+        // Assert
+        assertThat(migrated.migrationsExecuted).isEqualTo(1);
         latest.validate();
         assertThat(jdbc.queryForObject("SELECT name FROM upgrade_test.team WHERE id = ?", String.class, id))
                 .isEqualTo("Preserved");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM upgrade_test.app_user WHERE provisioning_status = 'COMPLETED'", Integer.class)).isEqualTo(3);
         jdbc.update("UPDATE upgrade_test.flyway_schema_history SET checksum = checksum + 1 WHERE version = '1'");
         assertThat(latest.validateWithResult().validationSuccessful).isFalse();
         jdbc.update("UPDATE upgrade_test.flyway_schema_history SET checksum = checksum - 1 WHERE version = '1'");

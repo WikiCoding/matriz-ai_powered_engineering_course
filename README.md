@@ -61,6 +61,7 @@ docker compose --profile prod down
 ```
 
 On first startup with a new Keycloak volume, the Compose setup imports the `matriz` realm, the `matriz-client` browser client, the `matriz-provisioning` service client, and one temporary-password user for each application role. The provisioning client uses `KEYCLOAK_PROVISIONING_CLIENT_SECRET`, which defaults only for local development; set this environment variable to a different value before starting Compose if required. The realm import does not update an existing Keycloak volume, so add the service client through the Keycloak Admin Console or recreate the local Keycloak data before relying on this configuration.
+The backend migration V4 also creates a demo team and local profiles linked to these imported users on fresh Keycloak volumes. Existing Keycloak volumes retain their original user IDs and require manual subject reconciliation for these profiles before frontend login can complete.
 
 | Role | Username | Initial password |
 | --- | --- | --- |
