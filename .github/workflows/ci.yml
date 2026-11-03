@@ -28,7 +28,7 @@ jobs:
         working-directory: matriz-backend
         run: chmod +x mvnw    
 
-      - name: Build backend (unit + integration tests)
+      - name: Build backend with unit + integration tests
         working-directory: matriz-backend
         run: ./mvnw verify
 
