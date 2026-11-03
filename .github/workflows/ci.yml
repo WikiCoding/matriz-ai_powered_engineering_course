@@ -24,6 +24,10 @@ jobs:
           distribution: "temurin"
           cache: maven
 
+      - name: Make mvnw executable
+        working-directory: matriz-backend
+        run: chmod +x mvnw    
+
       - name: Build backend (unit tests)
         working-directory: matriz-backend
         run: ./mvnw verify
