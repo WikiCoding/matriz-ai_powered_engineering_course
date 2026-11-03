@@ -28,33 +28,9 @@ jobs:
         working-directory: matriz-backend
         run: chmod +x mvnw    
 
-      - name: Build backend (unit tests)
+      - name: Build backend (unit + integration tests)
         working-directory: matriz-backend
         run: ./mvnw verify
-
-      - name: Start docker-compose services
-        run: docker compose up -d
-
-      - name: Wait for services to be healthy
-        run: |
-          timeout 120 bash -c '
-            while true; do
-              if docker compose exec app-db pg_isready -U matriz matriz 2>/dev/null; then
-                echo "PostgreSQL is ready"
-                break
-              fi
-              echo "Waiting for PostgreSQL to become healthy..."
-              sleep 5
-            done
-          '
-
-      - name: Run full integration tests
-        working-directory: matriz-backend
-        run: ./mvnw verify
-
-      - name: Stop docker-compose services
-        if: always()
-        run: docker compose down
 
   frontend:
     name: Frontend
