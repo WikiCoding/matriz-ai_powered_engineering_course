@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  COMPOSE_FILE: docker-compose.yaml
-  COMPOSE_PROFILES: prod
-
 jobs:
   backend:
     name: Backend
@@ -26,11 +22,15 @@ jobs:
 
       - name: Make mvnw executable
         working-directory: matriz-backend
-        run: chmod +x mvnw    
+        run: chmod +x mvnw
 
-      - name: Build backend with unit + integration tests
+      - name: Run backend unit, component and module tests
         working-directory: matriz-backend
-        run: ./mvnw verify
+        run: ./mvnw -B "-Dtest=!**/*IntegrationTest*,!MatrizBackendApplicationTests" test
+
+      - name: Run backend integration tests and build
+        working-directory: matriz-backend
+        run: ./mvnw -B "-Dtest=**/*IntegrationTest*,MatrizBackendApplicationTests" verify
 
   frontend:
     name: Frontend

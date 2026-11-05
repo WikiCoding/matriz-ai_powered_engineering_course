@@ -16,6 +16,15 @@ The Keycloak realm import runs only for a new Keycloak data volume. An existing 
 
 ## Verification
 
+CI runs two complementary selections through the existing Maven test runner, without moving Java packages or adding a test plugin:
+
+```powershell
+.\mvnw.cmd -B "-Dtest=!**/*IntegrationTest*,!MatrizBackendApplicationTests" test
+.\mvnw.cmd -B "-Dtest=**/*IntegrationTest*,MatrizBackendApplicationTests" verify
+```
+
+The first step runs unit, component and module tests without PostgreSQL containers. The second runs PostgreSQL integration tests and packages the backend; Docker must be available. New container integration test classes must use the `*IntegrationTest*` naming convention. `MatrizBackendApplicationTests` is explicitly included as a legacy name. On Linux use `./mvnw` in place of `.\mvnw.cmd`. Unfiltered `test` and `verify` still run all tests locally. CI stops on a failed step, so integration tests and packaging run only after the first selection passes. This workflow does not run Compose or browser journeys.
+
 From `matriz-backend`, run `mvnw.cmd -Dtest=ModuleStructureTests test` on Windows (or `./mvnw -Dtest=ModuleStructureTests test` elsewhere). The test checks the three detected modules and verifies Modulith boundaries without starting Spring or requiring PostgreSQL. Run `mvnw.cmd test` (or `mvn test` with installed Maven) with Docker running for the full suite. The Spring Boot integration tests use a disposable PostgreSQL 16.4 container, apply the same migration on startup, and cover repeat migration, checksum mismatch detection, constraints and cascades. They do not migrate the local Compose database.
 
 The existing POM pins Spring Modulith 2.1.1, while `docs/architecture.md` records 2.1.2. Dependency alignment is outstanding; this scaffolding change preserves the existing dependency versions.
