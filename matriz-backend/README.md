@@ -1,5 +1,9 @@
 # Backend scaffold
 
+## Actuator access
+
+All available Actuator web endpoints are exposed with `management.endpoints.web.exposure.include=*`. `/actuator` and `/actuator/**` permit anonymous requests for every HTTP method; individual endpoints retain their supported operations and availability settings. Approved on 2026-11-05; see the decision register.
+
 The backend has three closed Spring Modulith modules under `com.wikicoding.matrizbackend`: `user`, `team`, and `projectmanagement`. Public types in each module root form its API. Nested packages are internal; use explicit module interfaces for cross-module access.
 
 Each module contains documented packages for `domain`, `application`, `adapter.in.web`, `adapter.out.persistence`, and `configuration`. Project Management has separate domain packages for projects, tasks, assignments, and comments. These are package scaffolds, not implemented use cases or entities. Domain code must remain independent of Spring and persistence frameworks.

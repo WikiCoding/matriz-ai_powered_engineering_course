@@ -98,6 +98,26 @@ class LoginSecurityTests {
         protectedRequest("valid").expectStatus().isOk();
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"})
+    void actuatorAllowsAnonymousRequestsForAllMethods(String method) {
+        // Arrange: test-only handlers isolate authorization from endpoint availability.
+        var httpMethod = org.springframework.http.HttpMethod.valueOf(method);
+
+        // Act / Assert
+        client.method(httpMethod).uri("/actuator").exchange().expectStatus().isOk();
+        client.method(httpMethod).uri("/actuator/loggers/test").exchange().expectStatus().isOk();
+    }
+
+    @Test
+    void actuatorPrefixDoesNotMakeOtherRoutesPublic() {
+        // Arrange: a similarly named path is outside the Actuator namespace.
+        var path = "/actuator-other";
+
+        // Act / Assert
+        client.get().uri(path).exchange().expectStatus().isUnauthorized();
+    }
+
     @Test
     void administratorRegistrationCreatesIdentityRoleAndLocalProfile() {
         // Arrange: fixtures and dependency state are reset in resetState().
@@ -300,6 +320,9 @@ class LoginSecurityTests {
 
     @RestController
     static class ProtectedController {
+        @org.springframework.web.bind.annotation.RequestMapping({"/actuator", "/actuator/loggers/test"})
+        String actuator() { return "public"; }
+
         @GetMapping("/api/v1/test/protected")
         String me() { return "authenticated"; }
     }

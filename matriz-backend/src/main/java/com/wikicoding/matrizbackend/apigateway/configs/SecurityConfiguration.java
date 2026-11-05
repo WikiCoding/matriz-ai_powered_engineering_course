@@ -67,7 +67,7 @@ public class SecurityConfiguration {
                 .requestCache(RequestCacheConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator", "/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()

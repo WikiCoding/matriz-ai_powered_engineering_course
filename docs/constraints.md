@@ -82,3 +82,7 @@ The customer did not request project-name search in the source assignment, so it
 ## Login request clarification (2026-11-05)
 
 The customer confirmed that backend login requires username and password, not an email field. The API contract and HTTP example now match the existing backend. Email remains part of account provisioning and profile data.
+
+## Actuator access approval (2026-11-05)
+
+The customer requested anonymous access for all HTTP methods at `/actuator` and `/actuator/**`, and web exposure of all available Actuator endpoints (`management.endpoints.web.exposure.include=*`). This supersedes the earlier restricted Actuator exposure/access baseline. Endpoint availability and supported operations still follow Spring Boot's endpoint configuration.
