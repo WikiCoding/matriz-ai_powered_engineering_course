@@ -2,14 +2,8 @@ package com.wikicoding.matrizbackend.apigateway.configs;
 
 import com.wikicoding.matrizbackend.security.AuthorizationHelper;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,9 +16,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
@@ -32,7 +23,6 @@ import reactor.core.scheduler.Schedulers;
 
 @Configuration
 @EnableWebSecurity
-@Slf4j
 public class SecurityConfiguration {
     private static List<String> csv(String value) {
         return Arrays.stream(value.split(",")).map(String::trim).filter(item -> !item.isEmpty()).toList();
@@ -62,7 +52,6 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) {
         return http.csrf(AbstractHttpConfigurer::disable)
-                .addFilterBefore(requestLoggingFilter(), AnonymousAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(RequestCacheConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
@@ -110,18 +99,4 @@ public class SecurityConfiguration {
                 .build();
     }
 
-    private OncePerRequestFilter requestLoggingFilter() {
-        return new OncePerRequestFilter() {
-            @Override
-            protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-                                            @NonNull FilterChain chain) throws ServletException, IOException {
-                try {
-                    chain.doFilter(request, response);
-                } finally {
-                    log.info("HTTP {} {} from {} -> {}", request.getMethod(), request.getRequestURI(),
-                            request.getRemoteAddr(), response.getStatus());
-                }
-            }
-        };
-    }
 }

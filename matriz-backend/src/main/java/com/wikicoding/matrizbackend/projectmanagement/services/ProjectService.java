@@ -13,10 +13,12 @@ import org.springframework.data.domain.Sort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ProjectService {
     private final ProjectRepository projectRepository;
@@ -26,8 +28,9 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public Page<Project> findAllProjects(int page, int size) {
+        log.debug("Operation started: findAllProjects");
         if (page < 0 || size < 1 || size > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination parameters");
+            throw rejected(HttpStatus.BAD_REQUEST, "Invalid pagination parameters");
         }
         return projectRepository.findAll(PageRequest.of(page, size, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id"))))
                 .map(this::toDomain);
@@ -35,9 +38,10 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public Project findProjectById(UUID projectId) {
+        log.debug("Operation started: findProjectById");
         return projectRepository.findById(projectId)
                 .map(this::toDomain)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+                .orElseThrow(() -> rejected(HttpStatus.NOT_FOUND, "Project not found"));
     }
 
     private Project toDomain(ProjectDataModel stored) {
@@ -46,17 +50,20 @@ public class ProjectService {
 
     @Transactional
     public Project createProject(String name, String description, UUID teamId, String subject) {
+        log.debug("Operation started: createProject");
         Project validated = new Project(UUID.randomUUID(), name, description, validateExistingTeamByTeamId(teamId),
                 ownerLookup.requireActiveOwnerId(subject));
         projectRepository.save(new ProjectDataModel(validated.getId(), validated.getName(), validated.getDescription(),
                 validated.getTeamId(), validated.getOwnerId()));
+        log.debug("Project write staged; awaiting transaction commit");
         return validated;
     }
 
     @Transactional
     public Project updateProject(UUID projectId, String name, String description, UUID teamId) {
+        log.debug("Operation started: updateProject");
         ProjectDataModel stored = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+                .orElseThrow(() -> rejected(HttpStatus.NOT_FOUND, "Project not found"));
 
         Project validated = new Project(projectId, name, description, validateExistingTeamByTeamId(teamId), stored.getOwnerId());
         stored.changeDetails(validated.getName(), validated.getDescription());
@@ -66,25 +73,35 @@ public class ProjectService {
         if (teamChanged) {
             stored.assignTeamToProject(validated.getTeamId());
             taskAssignmentRepository.deleteInvalidForProject(projectId, teamId);
+            log.debug("Project team changed; invalid-assignment cleanup executed in current transaction");
         }
 
         projectRepository.flush();
 
+        log.debug("Project write staged; awaiting transaction commit");
         return validated;
     }
 
     @Transactional
     public void deleteProject(UUID projectId) {
+        log.debug("Operation started: deleteProject");
         ProjectDataModel project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+                .orElseThrow(() -> rejected(HttpStatus.NOT_FOUND, "Project not found"));
+        log.debug("Project deletion requested with task, comment and assignment cascades");
         projectRepository.delete(project);
         projectRepository.flush();
+        log.debug("Project deletion flushed; awaiting transaction commit");
     }
 
     private UUID validateExistingTeamByTeamId(UUID teamId) {
         if (teamId == null || !teamLookup.exists(teamId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Team not found");
+            throw rejected(HttpStatus.BAD_REQUEST, "Team not found");
         }
         return teamId;
+    }
+
+    private ResponseStatusException rejected(HttpStatus status, String reason) {
+        log.debug("Operation rejected status={} reason={}", status.value(), reason);
+        return new ResponseStatusException(status, reason);
     }
 }

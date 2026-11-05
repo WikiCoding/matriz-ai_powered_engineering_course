@@ -23,8 +23,10 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/auth")
 public class AuthenticationController {
     private final WebClient keycloakWebClient;
@@ -66,7 +68,9 @@ public class AuthenticationController {
                         failure.getStatusCode().is4xxClientError() ? HttpStatus.UNAUTHORIZED : HttpStatus.BAD_GATEWAY,
                         "Identity provider rejected login"))
                 .flatMap(tokens -> jwtDecoder.decode(tokens.access_token())
-                        .thenReturn(tokens));
+                        .thenReturn(tokens))
+                .doOnSuccess(tokens -> log.debug("Login completed"))
+                .doOnError(failure -> log.debug("Login failed exception={}", failure.getClass().getSimpleName()));
     }
 
     @PostMapping(value = "logout", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -99,6 +103,8 @@ public class AuthenticationController {
                 .body(BodyInserters.fromFormData(form))
                 .retrieve().toBodilessEntity().then()
                 .timeout(Duration.ofSeconds(5))
+                .doOnSuccess(ignored -> log.debug("Logout completed"))
+                .doOnError(failure -> log.debug("Logout failed exception={}", failure.getClass().getSimpleName()))
                 .onErrorMap(failure -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                         "Keycloak logout incomplete. Retry logout."));
     }
