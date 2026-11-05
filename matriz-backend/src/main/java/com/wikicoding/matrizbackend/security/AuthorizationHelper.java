@@ -17,7 +17,7 @@ public final class AuthorizationHelper {
         if (!(realmAccess instanceof Map<?, ?> access)) return java.util.Collections.emptyList();
         Object roles = access.get("roles");
         if (!(roles instanceof Collection<?> values)) return java.util.Collections.emptyList();
-        return values.stream().map(Object::toString).toList();
+        return values.stream().filter(String.class::isInstance).map(String.class::cast).toList();
     }
 
     public static boolean hasRole(Jwt jwt, String role) {
@@ -40,11 +40,9 @@ public final class AuthorizationHelper {
         java.util.Set<String> fallback = java.util.Set.of(fallbackRoles);
         return (authentication, context) -> {
             var principal = authentication.get();
+            var allowed = method.equals(context.getRequest().getMethod()) ? allowedMethod : fallback;
             boolean has = principal instanceof JwtAuthenticationToken jwt
-                    && extractRoles(jwt.getToken()).stream()
-                            .anyMatch(m -> m.equals(method)
-                                    ? allowedMethod.contains(m)
-                                    : fallback.contains(m));
+                    && extractRoles(jwt.getToken()).stream().anyMatch(allowed::contains);
             return new AuthorizationDecision(has);
         };
     }

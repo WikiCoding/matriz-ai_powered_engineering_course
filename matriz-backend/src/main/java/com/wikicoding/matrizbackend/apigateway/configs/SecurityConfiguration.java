@@ -81,11 +81,12 @@ public class SecurityConfiguration {
                         .access(AuthorizationHelper.hasAnyRole("ADMINISTRATOR", "PROJECT_MANAGER", "SOFTWARE_ENGINEER"))
                         .requestMatchers("/api/v1/teams", "/api/v1/teams/**", "/api/v1/users", "/api/v1/users/**")
                         .access(AuthorizationHelper.hasAnyRole("ADMINISTRATOR"))
+                        .requestMatchers(HttpMethod.GET, "/api/v1/comments", "/api/v1/comments/*", "/api/v1/tasks/*/comments")
+                        .access(AuthorizationHelper.hasAnyRole("PROJECT_MANAGER", "SOFTWARE_ENGINEER"))
+                        .requestMatchers(HttpMethod.POST, "/api/v1/comments", "/api/v1/comments/*", "/api/v1/tasks/*/comments")
+                        .access(AuthorizationHelper.hasAnyRole("SOFTWARE_ENGINEER"))
                         .requestMatchers("/api/v1/comments", "/api/v1/comments/*", "/api/v1/tasks/*/comments")
-                        .access(AuthorizationHelper.hasRoleForMethod(
-                                HttpMethod.GET.name(),
-                                new String[]{"PROJECT_MANAGER", "SOFTWARE_ENGINEER"},
-                                new String[]{"SOFTWARE_ENGINEER"}))
+                        .denyAll()
                         .requestMatchers("/api/v1/tasks/*/assignments", "/api/v1/tasks/*/assignments/*")
                         .access(AuthorizationHelper.hasRoleForMethod(
                                 HttpMethod.GET.name(),
