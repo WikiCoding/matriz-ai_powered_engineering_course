@@ -1,15 +1,14 @@
 package com.wikicoding.matrizbackend.apigateway.configs;
 
+import com.wikicoding.matrizbackend.security.AuthorizationHelper;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Collection;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,13 +23,12 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -74,95 +72,36 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*/display")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (roles.contains("PROJECT_MANAGER") || roles.contains("SOFTWARE_ENGINEER"));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasAnyRole("PROJECT_MANAGER", "SOFTWARE_ENGINEER"))
                         .requestMatchers(HttpMethod.GET, "/api/v1/teams", "/api/v1/teams/*")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (roles.contains("ADMINISTRATOR") || roles.contains("PROJECT_MANAGER")
-                                            || roles.contains("SOFTWARE_ENGINEER"));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasAnyRole("ADMINISTRATOR", "PROJECT_MANAGER", "SOFTWARE_ENGINEER"))
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/assignee-options")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && roles.contains("PROJECT_MANAGER");
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasAnyRole("PROJECT_MANAGER"))
                         .requestMatchers(HttpMethod.GET, "/api/v1/dashboard")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (roles.contains("ADMINISTRATOR") || roles.contains("PROJECT_MANAGER")
-                                            || roles.contains("SOFTWARE_ENGINEER"));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasAnyRole("ADMINISTRATOR", "PROJECT_MANAGER", "SOFTWARE_ENGINEER"))
                         .requestMatchers("/api/v1/teams", "/api/v1/teams/**", "/api/v1/users", "/api/v1/users/**")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean administrator = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && roles.contains("ADMINISTRATOR");
-                            return new org.springframework.security.authorization.AuthorizationDecision(administrator);
-                        })
+                        .access(AuthorizationHelper.hasAnyRole("ADMINISTRATOR"))
+                        .requestMatchers(HttpMethod.GET, "/api/v1/comments", "/api/v1/comments/*", "/api/v1/tasks/*/comments")
+                        .access(AuthorizationHelper.hasAnyRole("PROJECT_MANAGER", "SOFTWARE_ENGINEER"))
+                        .requestMatchers(HttpMethod.POST, "/api/v1/comments", "/api/v1/comments/*", "/api/v1/tasks/*/comments")
+                        .access(AuthorizationHelper.hasAnyRole("SOFTWARE_ENGINEER"))
                         .requestMatchers("/api/v1/comments", "/api/v1/comments/*", "/api/v1/tasks/*/comments")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (HttpMethod.GET.matches(context.getRequest().getMethod())
-                                            ? roles.contains("PROJECT_MANAGER") || roles.contains("SOFTWARE_ENGINEER")
-                                            : HttpMethod.POST.matches(context.getRequest().getMethod())
-                                            && roles.contains("SOFTWARE_ENGINEER"));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .denyAll()
                         .requestMatchers("/api/v1/tasks/*/assignments", "/api/v1/tasks/*/assignments/*")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (roles.contains("PROJECT_MANAGER")
-                                            || (HttpMethod.GET.matches(context.getRequest().getMethod())
-                                                    && roles.contains("SOFTWARE_ENGINEER")));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasRoleForMethod(
+                                HttpMethod.GET.name(),
+                                new String[]{"PROJECT_MANAGER", "SOFTWARE_ENGINEER"},
+                                new String[]{"PROJECT_MANAGER"}))
                         .requestMatchers("/api/v1/projects", "/api/v1/projects/*")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (roles.contains("PROJECT_MANAGER") || (HttpMethod.GET.matches(context.getRequest().getMethod())
-                                            && roles.contains("SOFTWARE_ENGINEER")));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasRoleForMethod(
+                                HttpMethod.GET.name(),
+                                new String[]{"PROJECT_MANAGER", "SOFTWARE_ENGINEER"},
+                                new String[]{"PROJECT_MANAGER"}))
                         .requestMatchers("/api/v1/projects/*/tasks", "/api/v1/tasks", "/api/v1/tasks/*")
-                        .access((authentication, context) -> {
-                            var principal = authentication.get();
-                            boolean allowed = principal instanceof JwtAuthenticationToken jwt
-                                    && jwt.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                                    && access.get("roles") instanceof Collection<?> roles
-                                    && (roles.contains("PROJECT_MANAGER") || (HttpMethod.GET.matches(context.getRequest().getMethod())
-                                            && roles.contains("SOFTWARE_ENGINEER")));
-                            return new org.springframework.security.authorization.AuthorizationDecision(allowed);
-                        })
+                        .access(AuthorizationHelper.hasRoleForMethod(
+                                HttpMethod.GET.name(),
+                                new String[]{"PROJECT_MANAGER", "SOFTWARE_ENGINEER"},
+                                new String[]{"PROJECT_MANAGER"}))
                         .anyRequest().authenticated())
                 .cors(cors -> {})
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))

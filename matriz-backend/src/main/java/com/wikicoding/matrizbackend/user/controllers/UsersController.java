@@ -1,5 +1,6 @@
 package com.wikicoding.matrizbackend.user.controllers;
 
+import com.wikicoding.matrizbackend.security.AuthorizationHelper;
 import com.wikicoding.matrizbackend.user.Profile;
 import com.wikicoding.matrizbackend.user.UserAccounts;
 import com.wikicoding.matrizbackend.user.dtos.Display;
@@ -13,7 +14,6 @@ import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -68,11 +68,10 @@ public class UsersController {
 
         var identity = userDisplayService.display(user.id());
 
-        String role = principal.getToken().getClaim("realm_access") instanceof Map<?, ?> access
-                && access.get("roles") instanceof Collection<?> roles
-                ? roles.stream().map(Object::toString).filter(value -> value.equals("ADMINISTRATOR")
+        String role = AuthorizationHelper.extractRoles(principal.getToken()).stream()
+                .filter(value -> value.equals("ADMINISTRATOR")
                         || value.equals("PROJECT_MANAGER") || value.equals("SOFTWARE_ENGINEER"))
-                .findFirst().orElse("") : "";
+                .findFirst().orElse("");
 
         return new com.wikicoding.matrizbackend.user.dtos.Profile(user.id(), identity.displayName(),
                 user.email(), user.teamId(), role);
@@ -165,10 +164,7 @@ public class UsersController {
     }
 
     private boolean hasAdministratorRole(Jwt jwt) {
-        Object realmAccess = jwt.getClaims().get("realm_access");
-        if (!(realmAccess instanceof Map<?, ?> access)) return false;
-        Object roles = access.get("roles");
-        return roles instanceof Collection<?> values && values.contains("ADMINISTRATOR");
+        return AuthorizationHelper.hasRole(jwt, "ADMINISTRATOR");
     }
 
     private void validateRegistration(RegisterRequest request) {
