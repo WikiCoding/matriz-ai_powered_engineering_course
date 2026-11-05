@@ -22,6 +22,6 @@ npm.cmd run build
 
 Both checks must pass for code changes. Inspect test output for skipped tests and build output for warnings; report unresolved findings. A successful build alone does not prove behavior or test success. There is currently no separate lint or type-check script in `package.json`; do not claim those checks ran.
 
-Playwright is selected in the architecture but is not currently installed or configured here. For browser-journey changes, use the repository's Playwright command once that setup exists. Until then, explicitly report the automated browser coverage gap and perform the affected manual journey against local Compose when available; manual checks do not replace automated acceptance coverage. Do not claim a browser suite passed or invent an executable script.
+For browser-journey changes, run `npm.cmd run test:e2e` against the isolated environment described in the frontend README. Report any unavailable prerequisites and do not treat manual checks as automated acceptance coverage.
 
 For documentation-only edits, follow the root verification exception. Report commands, outcomes, browser checks performed and remaining verification gaps.

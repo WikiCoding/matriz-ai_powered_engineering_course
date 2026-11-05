@@ -37,4 +37,20 @@ npm.cmd test -- --watchAll=false
 npm.cmd run build
 ```
 
-Playwright is selected in the architecture but has not yet been configured in this package. Browser journeys must be checked manually until that setup exists.
+Playwright browser journeys are described below.
+
+## Browser journey
+
+Playwright runs against a separately started frontend and an **isolated, disposable** backend/Keycloak/database environment. Use a Project Manager account and an existing team in that environment; the test creates a uniquely named project through the API and deletes it (and its task) afterward. A process interruption or failed cleanup can leave that project behind. Never point this test at production or a shared data set. A fresh local Keycloak volume may require the initial demo password to be changed before login; existing volumes may require the profile reconciliation described in the root README.
+
+From this directory, after `npm.cmd ci` and with the isolated application running:
+
+```powershell
+npx.cmd playwright install chromium
+$env:E2E_USERNAME = '<project-manager username>'
+$env:E2E_PASSWORD = '<project-manager password>'
+$env:E2E_TEAM_ID = '<existing team UUID>'
+npm.cmd run test:e2e
+```
+
+`E2E_BASE_URL` defaults to `http://localhost:3000` and `E2E_API_URL` to `http://localhost:8080`; set both when the isolated services use other addresses. The frontend must target that same backend. The test authenticates through the UI, opens the disposable project, creates a task and checks the listing again after reload. It uses a separate API login for setup and cleanup. Traces are retained on failure in `test-results`; they can contain sensitive test data and should not be committed. Use `npm.cmd run test:e2e -- --list` to check discovery without running the journey.
