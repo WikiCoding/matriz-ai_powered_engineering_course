@@ -252,7 +252,7 @@ components:
         password: {type: string, format: password, minLength: 15, writeOnly: true, description: Delivered in person and usable for direct login}
         role: {$ref: '#/components/schemas/Role'}
         teamId: {type: string, format: uuid}
-    LoginRequest: {type: object, required: [email, password], properties: {email: {type: string}, password: {type: string, format: password, writeOnly: true}}}
+    LoginRequest: {type: object, required: [username, password], properties: {username: {type: string, minLength: 1}, password: {type: string, format: password, writeOnly: true}}}
     KeycloakTokenResponse: {type: object, required: [access_token, token_type, expires_in], properties: {access_token: {type: string}, refresh_token: {type: string}, token_type: {type: string}, expires_in: {type: integer, format: int64}, refresh_expires_in: {type: integer, format: int64}, scope: {type: string}}}
     TeamCreate: {type: object, required: [name], properties: {name: {type: string, minLength: 1, pattern: '\\S'}}}
     Team: {type: object, required: [id, name], properties: {id: {type: string, format: uuid}, name: {type: string, minLength: 1}}}

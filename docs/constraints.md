@@ -78,3 +78,7 @@ This approval covers documentation and OpenAPI alignment now. Application code, 
 ## D-18 — Project-name search scope correction (2026-11-01)
 
 The customer did not request project-name search in the source assignment, so it is removed from the MVP. Project listing remains paginated and alphabetically sorted. The old wireframe prompt is historical and does not authorize a search control. The current PNG omits it. No backend search route or query is required.
+
+## Login request clarification (2026-11-05)
+
+The customer confirmed that backend login requires username and password, not an email field. The API contract and HTTP example now match the existing backend. Email remains part of account provisioning and profile data.

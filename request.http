@@ -1,31 +1,47 @@
-# ============================================================================
-# Matriz API — HttpRequest file
-# Base URL: http://localhost:8080
-# ============================================================================
-# Instructions:
-#   1. Start the application with: docker compose --profile prod up
-#   2. Login first to obtain an access token.
-#   3. Copy the access_token from the login response and paste it into the
-#      {{$dotenv}} variable below, or use the {{access_token}} variable
-#      with VS Code REST Client / insomnia extensions.
+# Matriz API - VS Code REST Client
+# Run requests individually; this is a catalog, not a run-all workflow.
+# Start with docker compose --profile prod up (see README.md for build setup).
+# Set credentials/tokens locally; never commit real passwords or tokens.
+# Fresh demo accounts require completing the temporary-password change in Keycloak.
+# Login requires username and password; demo usernames are email-shaped.
+# Copy login tokens into access_token and refresh_token below.
+# Logout requires tokens from the same login. Run it last and clear both tokens
+# afterward; issued access tokens remain valid until expiry.
 #
-# Environment variables you may want to define:
-#   BASE_URL    — http://localhost:8080 (default below)
-#   access_token — paste the Bearer token after login
-#   page        — page index (default 0)
-#   size        — page size (default 20)
-# ============================================================================
+# Switch accounts and replace access_token for the required role:
+# Administrator: user listing/creation, memberships and team creation.
+# Project Manager: project/task mutations and assignment mutations/options.
+# Project Manager or Software Engineer: project/task/comment reads, user display.
+# Software Engineer: comment creation. Administrators cannot read project content.
+#
+# Replace ID placeholders with application UUIDs from create/list responses.
+# Create/select a team before users/projects, a project before tasks, and a task
+# before assignments/comments. engineer_user_id must be an eligible Software
+# Engineer in the project's team, returned by assignee-options.
+# Run DELETE requests after dependent examples; project/task deletion cascades.
+
+@BASE_URL = http://localhost:8080
+@page = 0
+@size = 20
+@access_token = REPLACE_WITH_ACCESS_TOKEN
+@refresh_token = REPLACE_WITH_REFRESH_TOKEN
+@team_id = REPLACE_WITH_TEAM_UUID
+@user_id = REPLACE_WITH_USER_UUID
+@project_id = REPLACE_WITH_PROJECT_UUID
+@task_id = REPLACE_WITH_TASK_UUID
+@comment_id = REPLACE_WITH_COMMENT_UUID
+@engineer_user_id = REPLACE_WITH_ELIGIBLE_ENGINEER_UUID
 
 ### ────────────────────────────────────────────────────────────────────────
 # 1. AUTH — Login
 #    Exchange credentials for Keycloak tokens.
 #    Returns: access_token, refresh_token, token_type, expires_in
-### @name auth-login
-POST {{BASE_URL:/api/v1/auth/login}}
+# @name auth_login
+POST {{BASE_URL}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@matriz.local",
+  "username": "admin@matriz.local",
   "password": "MatrizAdmin123!"
 }
 
@@ -33,8 +49,8 @@ Content-Type: application/json
 # 2. AUTH — Logout
 #    Terminate the Keycloak session.
 #    Requires: refresh_token in body, access_token in header.
-### @name auth-logout
-POST {{BASE_URL:/api/v1/auth/logout}}
+# @name auth_logout
+POST {{BASE_URL}}/api/v1/auth/logout
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -45,22 +61,22 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 3. AUTH — Get My Profile
 #    Read the authenticated user's profile for the panel.
-### @name users-me
-GET {{BASE_URL:/api/v1/users/me}}
+# @name users_me
+GET {{BASE_URL}}/api/v1/users/me
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 4. USERS — List Users (Admin only)
 #    List all users with pagination.
-### @name users-list
-GET {{BASE_URL:/api/v1/users}}?page={{page:0}}&size={{size:20}}
+# @name users_list
+GET {{BASE_URL}}/api/v1/users?page={{page}}&size={{size}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 5. USERS — Create User (Admin only)
 #    Administrator provisions a Keycloak identity and local user profile.
-### @name users-create
-POST {{BASE_URL:/api/v1/users}}
+# @name users_create
+POST {{BASE_URL}}/api/v1/users
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -77,22 +93,22 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 6. USERS — List Team Memberships
 #    List team memberships for a specific user.
-### @name users-team-memberships
-GET {{BASE_URL:/api/v1/users/{userId}/team-memberships}}
+# @name users_team_memberships
+GET {{BASE_URL}}/api/v1/users/{{user_id}}/team-memberships
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 7. USERS — Get User Display
 #    Read a user's display name for owner, assignee, or comment attribution.
-### @name users-display
-GET {{BASE_URL:/api/v1/users/{userId}/display}}
+# @name users_display
+GET {{BASE_URL}}/api/v1/users/{{user_id}}/display
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 8. TEAMS — Create Team (Admin only)
 #    Administrator creates a team.
-### @name teams-create
-POST {{BASE_URL:/api/v1/teams}}
+# @name teams_create
+POST {{BASE_URL}}/api/v1/teams
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -103,29 +119,29 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 9. TEAMS — List Teams
 #    List accessible teams with pagination.
-### @name teams-list
-GET {{BASE_URL:/api/v1/teams}}?page={{page:0}}&size={{size:20}}
+# @name teams_list
+GET {{BASE_URL}}/api/v1/teams?page={{page}}&size={{size}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 10. TEAMS — Get Team
 #     Read a team name for project and task display.
-### @name teams-get
-GET {{BASE_URL:/api/v1/teams/{teamId}}}
+# @name teams_get
+GET {{BASE_URL}}/api/v1/teams/{{team_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 11. PROJECTS — List Projects
 #     List accessible projects alphabetically by name.
-### @name projects-list
-GET {{BASE_URL:/api/v1/projects}}?page={{page:0}}&size={{size:20}}
+# @name projects_list
+GET {{BASE_URL}}/api/v1/projects?page={{page}}&size={{size}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 12. PROJECTS — Create Project
 #     Create project owned by authenticated user.
-### @name projects-create
-POST {{BASE_URL:/api/v1/projects}}
+# @name projects_create
+POST {{BASE_URL}}/api/v1/projects
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -138,15 +154,15 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 13. PROJECTS — Get Project
 #     Get an accessible project by ID.
-### @name projects-get
-GET {{BASE_URL:/api/v1/projects/{projectId}}}
+# @name projects_get
+GET {{BASE_URL}}/api/v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 14. PROJECTS — Update Project
 #     Replace an accessible project's editable fields.
-### @name projects-update
-PUT {{BASE_URL:/api/v1/projects/{projectId}}}
+# @name projects_update
+PUT {{BASE_URL}}/api/v1/projects/{{project_id}}
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -159,29 +175,29 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 15. PROJECTS — Delete Project
 #     Delete an accessible project (cascades to tasks, comments, assignments).
-### @name projects-delete
-DELETE {{BASE_URL:/api/v1/projects/{projectId}}}
+# @name projects_delete
+DELETE {{BASE_URL}}/api/v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 16. PROJECTS — List Assignee Options
 #     List eligible Software Engineers in the project's team.
-### @name projects-assignee-options
-GET {{BASE_URL:/api/v1/projects/{projectId}/assignee-options}}
+# @name projects_assignee_options
+GET {{BASE_URL}}/api/v1/projects/{{project_id}}/assignee-options
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 17. PROJECTS — List Project Tasks
 #     List project tasks with status and priority filters.
-### @name projects-tasks
-GET {{BASE_URL:/api/v1/projects/{projectId}/tasks}}?page={{page:0}}&size={{size:20}}&status=TODO&priority=HIGH
+# @name projects_tasks
+GET {{BASE_URL}}/api/v1/projects/{{project_id}}/tasks?page={{page}}&size={{size}}&status=TODO&priority=HIGH
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 18. TASKS — Create Task
 #     Create task in an accessible project.
-### @name tasks-create
-POST {{BASE_URL:/api/v1/tasks}}
+# @name tasks_create
+POST {{BASE_URL}}/api/v1/tasks
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -197,15 +213,15 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 19. TASKS — Get Task
 #     Get an accessible task by ID.
-### @name tasks-get
-GET {{BASE_URL:/api/v1/tasks/{taskId}}}
+# @name tasks_get
+GET {{BASE_URL}}/api/v1/tasks/{{task_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 20. TASKS — Update Task
 #     Update an accessible task (partial update; omitted fields retained).
-### @name tasks-update
-PATCH {{BASE_URL:/api/v1/tasks/{taskId}}}
+# @name tasks_update
+PATCH {{BASE_URL}}/api/v1/tasks/{{task_id}}
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -218,22 +234,22 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 21. TASKS — Delete Task
 #     Delete an accessible task (cascades to comments and assignments).
-### @name tasks-delete
-DELETE {{BASE_URL:/api/v1/tasks/{taskId}}}
+# @name tasks_delete
+DELETE {{BASE_URL}}/api/v1/tasks/{{task_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 22. TASKS — List Task Assignments
 #     List task assignees (zero or one Software Engineer).
-### @name tasks-assignments-list
-GET {{BASE_URL:/api/v1/tasks/{taskId}/assignments}}
+# @name tasks_assignments_list
+GET {{BASE_URL}}/api/v1/tasks/{{task_id}}/assignments
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 23. TASKS — Add Task Assignment
 #     Project Manager assigns one Software Engineer to an unassigned task.
-### @name tasks-assignments-add
-POST {{BASE_URL:/api/v1/tasks/{taskId}/assignments}}
+# @name tasks_assignments_add
+POST {{BASE_URL}}/api/v1/tasks/{{task_id}}/assignments
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -244,22 +260,22 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 24. TASKS — Remove Task Assignment
 #     Project Manager removes the task assignment.
-### @name tasks-assignments-remove
-DELETE {{BASE_URL:/api/v1/tasks/{taskId}/assignments/{userId}}}
+# @name tasks_assignments_remove
+DELETE {{BASE_URL}}/api/v1/tasks/{{task_id}}/assignments/{{engineer_user_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 25. TASKS — List Task Comments
 #     Project Managers and Software Engineers read task comments.
-### @name tasks-comments-list
-GET {{BASE_URL:/api/v1/tasks/{taskId}/comments}}
+# @name tasks_comments_list
+GET {{BASE_URL}}/api/v1/tasks/{{task_id}}/comments
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 26. COMMENTS — Create Comment
 #     Software Engineer adds comment as authenticated author.
-### @name comments-create
-POST {{BASE_URL:/api/v1/comments}}
+# @name comments_create
+POST {{BASE_URL}}/api/v1/comments
 Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
@@ -271,13 +287,13 @@ Authorization: Bearer {{access_token}}
 ### ────────────────────────────────────────────────────────────────────────
 # 27. COMMENTS — Get Comment
 #     Get a single comment by ID.
-### @name comments-get
-GET {{BASE_URL:/api/v1/comments/{commentId}}}
+# @name comments_get
+GET {{BASE_URL}}/api/v1/comments/{{comment_id}}
 Authorization: Bearer {{access_token}}
 
 ### ────────────────────────────────────────────────────────────────────────
 # 28. DASHBOARD — Get Dashboard
 #     Accessible projects and task counts by status.
-### @name dashboard
-GET {{BASE_URL:/api/v1/dashboard}}
+# @name dashboard
+GET {{BASE_URL}}/api/v1/dashboard
 Authorization: Bearer {{access_token}}
