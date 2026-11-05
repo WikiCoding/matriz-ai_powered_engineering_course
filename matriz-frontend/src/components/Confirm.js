@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-function Confirm({ title, children, close, submit, pending }) {
+function Confirm({ title, children, close, submit, pending, error }) {
   const dialog = useRef(null);
   const cancel = useRef(null);
   useEffect(() => {
@@ -8,6 +8,10 @@ function Confirm({ title, children, close, submit, pending }) {
     cancel.current.focus();
     return () => previous?.focus();
   }, []);
+  useEffect(() => {
+    if (pending) dialog.current.focus();
+    else cancel.current.focus();
+  }, [pending]);
   function handleKeyDown(event) {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -18,10 +22,10 @@ function Confirm({ title, children, close, submit, pending }) {
       const first = buttons[0], last = buttons[buttons.length - 1];
       if (!first) {
         event.preventDefault();
-      } else if (event.shiftKey && document.activeElement === first) {
+      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) {
         event.preventDefault();
         first.focus();
       }
@@ -31,6 +35,7 @@ function Confirm({ title, children, close, submit, pending }) {
     <div className="backdrop">
       <div
         ref={dialog}
+        tabIndex={-1}
         onKeyDown={handleKeyDown}
         className="dialog"
         role="dialog"
@@ -39,6 +44,7 @@ function Confirm({ title, children, close, submit, pending }) {
       >
         <h2>{title}</h2>
         <p>{children}</p>
+        {error && <div className="notice error" role="alert">{error}</div>}
         <div className="actions">
           <button ref={cancel} disabled={pending} onClick={close}>
             Cancel

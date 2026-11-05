@@ -258,6 +258,7 @@ function TaskDetail({ token, role }) {
           close={() => setConfirm(false)}
           submit={remove}
           pending={mutation.pending}
+          error={mutation.error}
         >
           This permanently removes the task, its comments and assignment.
         </Confirm>

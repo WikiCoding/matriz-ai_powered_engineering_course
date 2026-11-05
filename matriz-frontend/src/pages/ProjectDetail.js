@@ -221,6 +221,7 @@ function ProjectDetail({ token, role }) {
           close={() => setConfirm(false)}
           submit={remove}
           pending={mutation.pending}
+          error={mutation.error}
         >
           This permanently removes the project, all its tasks, comments and
           assignments.

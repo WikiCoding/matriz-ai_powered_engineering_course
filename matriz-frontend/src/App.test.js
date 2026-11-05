@@ -11,7 +11,7 @@ test('signs in and shows accessible project counts', async () => {
   render(<App />);
 
   // Act
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alex@example.com' } });
+  fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alex@example.com' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
@@ -32,7 +32,7 @@ test('loads the software engineer dashboard once under Strict Mode', async () =>
   render(<React.StrictMode><App /></React.StrictMode>);
 
   // Act
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alex@example.com' } });
+  fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alex@example.com' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
   await screen.findByText('Welcome, Alex');
