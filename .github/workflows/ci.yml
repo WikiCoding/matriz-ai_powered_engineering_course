@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Make mvnw executable
+        working-directory: matriz-backend
+        run: chmod +x mvnw
+
+      - name: Run backend unit, component and module tests
+        working-directory: matriz-backend
+        run: ./mvnw -B "-Dtest=!**/*IntegrationTest*,!MatrizBackendApplicationTests" test
+
+      - name: Run backend integration tests and build
+        working-directory: matriz-backend
+        run: ./mvnw -B "-Dtest=**/*IntegrationTest*,MatrizBackendApplicationTests" verify
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: matriz-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: matriz-frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: matriz-frontend
+        run: npm test -- --watchAll=false
+
+      - name: Build frontend
+        working-directory: matriz-frontend
+        run: npm run build
