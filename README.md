@@ -28,6 +28,8 @@ The backend has User, Team and Project Management modules plus HTTP edge infrast
 
 ## Running locally
 
+The backend Maven build also installs and builds `matriz-frontend` and includes it in the Spring Boot JAR. Install Node.js/npm alongside Java 21 before building. Use a clean Maven build for deployment to remove old frontend assets. The bundled UI is served at `http://localhost:8080`; see [frontend packaging](matriz-backend/README.md#bundled-frontend).
+
 Docker Compose keeps the application services behind the `prod` profile. Supporting services can be started independently while developing infrastructure or application components.
 
 Start the supporting services:

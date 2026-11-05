@@ -70,6 +70,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, FrontendConfiguration.PUBLIC_PATHS).permitAll()
+                        .requestMatchers(HttpMethod.HEAD, FrontendConfiguration.PUBLIC_PATHS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*/display")
                         .access(AuthorizationHelper.hasAnyRole("PROJECT_MANAGER", "SOFTWARE_ENGINEER"))

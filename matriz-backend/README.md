@@ -14,6 +14,14 @@ Flyway runs automatically at backend startup using the Spring Data JPA datasourc
 
 The Keycloak realm import runs only for a new Keycloak data volume. An existing Keycloak volume retains its old user IDs, so V4 alone cannot link those users; reconcile their subjects with the actual Keycloak IDs before using the demo accounts. Do not delete volumes to perform that reconciliation.
 
+## Bundled frontend
+
+Install Node.js and npm on the Linux build machine and keep `matriz-frontend` beside `matriz-backend`. Maven runs `npm ci` and `npm run build` in that sibling directory during `generate-resources`, then copies the build into `target/classes/static` during `process-resources`. The Spring Boot JAR includes those files; Node.js is not needed in the runtime image.
+
+Use `.\mvnw.cmd clean verify` on Windows (or `./mvnw clean verify` elsewhere) for a fresh deployment build, with Docker running for integration tests. Cleaning removes assets from previous frontend builds. For a focused build/copy check without Java tests, use `.\mvnw.cmd process-resources`. Maven lifecycle commands reaching this phase now also build the frontend and require npm registry access or a populated npm cache.
+
+Leave `REACT_APP_API_BASE_URL` empty to use the backend's origin. Spring serves the bundled UI at `http://localhost:8080`; GET/HEAD access to the known UI routes and static assets is public. Known React page routes forward to `index.html` to support refresh/direct navigation. API authorization remains unchanged. Unmapped paths do not receive an SPA fallback.
+
 ## Verification
 
 From `matriz-backend`, run `mvnw.cmd -Dtest=ModuleStructureTests test` on Windows (or `./mvnw -Dtest=ModuleStructureTests test` elsewhere). The test checks the three detected modules and verifies Modulith boundaries without starting Spring or requiring PostgreSQL. Run `mvnw.cmd test` (or `mvn test` with installed Maven) with Docker running for the full suite. The Spring Boot integration tests use a disposable PostgreSQL 16.4 container, apply the same migration on startup, and cover repeat migration, checksum mismatch detection, constraints and cascades. They do not migrate the local Compose database.

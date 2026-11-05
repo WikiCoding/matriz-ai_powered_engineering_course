@@ -55,6 +55,8 @@ The integrated servlet edge uses Redis-backed limiting, approved at 5 requests/s
 
 ## Frontend structure
 
+The backend Maven lifecycle builds the sibling React package with `npm ci` and `npm run build`, then copies its output to `target/classes/static` for inclusion in the Spring Boot JAR. Node.js/npm are build-time prerequisites only. Spring MVC serves static assets and forwards known React page routes to `index.html`; GET/HEAD access to these UI resources is public, while API authorization remains enforced. The separate frontend development server remains optional.
+
 React Router covers login, home, project list/detail and task detail navigation. Shared components include form fields, buttons, dialogs, status/priority indicators, loading/empty/error messages and reusable list elements. Keep API access/configuration centralized. Context may carry authentication/profile or other truly shared UI state; keep page/form state local where possible.
 
 UI flows implement FR-14, update only after confirmed API results, and keep counts consistent with the authorized dataset. Assignment selectors and comment lists follow the revised model. The [revised wireframe](ui/wireframe.png) illustrates these screens and shared states; [design notes](ui/wireframe.md) explain pending behavior. No UI implementation is included here.
