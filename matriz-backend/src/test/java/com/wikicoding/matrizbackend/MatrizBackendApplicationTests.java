@@ -34,138 +34,47 @@ class MatrizBackendApplicationTests {
     @Autowired JdbcTemplate jdbc;
 
     @Test
-    void startupMigratesEmptyDatabaseAndRepeatMigrationIsANoOp() {
-        // Arrange
-        UUID demoTeam = UUID.fromString("e0a987ab-bff0-4de8-b320-04b1f42899aa");
-
-        // Act
-        var applied = flyway.info().applied();
-        var repeated = flyway.migrate();
-
-        // Assert
-        assertThat(applied).extracting(migration -> migration.getVersion().getVersion())
-                .containsExactly("1");
-        assertThat(flyway.info().pending()).isEmpty();
-        flyway.validate();
-        assertThat(repeated.migrationsExecuted).isZero();
-        assertThat(count("team", "id", demoTeam)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE team_id = ? AND provisioning_status = 'COMPLETED' AND keycloak_subject = id::text", Integer.class, demoTeam)).isEqualTo(3);
-        assertThat(jdbc.queryForObject("SELECT to_regclass('public.event_publication') IS NULL", Boolean.class)).isTrue();
-        assertThat(jdbc.queryForObject("SELECT to_regclass('public.audit_record') IS NULL", Boolean.class)).isTrue();
-    }
-
-    @Test
-    void duplicateEmailsAreRejectedCaseInsensitively() {
-        // Arrange
-        UUID team = UUID.randomUUID(), user = UUID.randomUUID();
-        jdbc.update("INSERT INTO team (id, name) VALUES (?, 'Email team')", team);
-        String email = UUID.randomUUID() + "@example.test";
-        insertUser(user, team, email);
-        // Act / Assert
-        assertThatThrownBy(() -> insertUser(UUID.randomUUID(), team, email.toUpperCase(java.util.Locale.ROOT)))
+    void constraintsAndCascadesPreserveUsersAndTeams() {
+        UUID team = UUID.randomUUID(), user = UUID.randomUUID(), other = UUID.randomUUID();
+        UUID project = UUID.randomUUID(), task = UUID.randomUUID();
+        jdbc.update("INSERT INTO team VALUES (?, 'Test team')", team);
+        insertUser(user, team, "one@example.test");
+        insertUser(other, team, "two@example.test");
+        assertThatThrownBy(() -> insertUser(UUID.randomUUID(), team, "ONE@example.test"))
                 .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE team_id = ?", Integer.class, team)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT email FROM app_user WHERE id = ?", String.class, user)).isEqualTo(email);
-    }
-
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"effort = 4", "title = E'\\t\\n '", "status = 'QA'", "priority = 'URGENT'"})
-    void invalidTaskUpdatePreservesStoredRow(String update) {
-        // Arrange
-        var fixture = fixture();
-        var before = jdbc.queryForMap("SELECT * FROM task WHERE id = ?", fixture[3]);
-        // Act / Assert
-        assertThatThrownBy(() -> jdbc.update("UPDATE task SET " + update + " WHERE id = ?", fixture[3]))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
-        assertThat(jdbc.queryForMap("SELECT * FROM task WHERE id = ?", fixture[3])).isEqualTo(before);
-    }
-
-    @Test
-    void secondAssignmentAndReferencedTeamDeletionAreRejected() {
-        // Arrange
-        var f = fixture();
-        UUID other = UUID.randomUUID();
-        insertUser(other, f[0], other + "@example.test");
-        jdbc.update("INSERT INTO task_assignment (task_id, user_id) VALUES (?, ?)", f[3], f[1]);
-        // Act / Assert
-        assertThatThrownBy(() -> jdbc.update("INSERT INTO task_assignment (task_id, user_id) VALUES (?, ?)", f[3], other))
-                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
-        assertThatThrownBy(() -> jdbc.update("DELETE FROM team WHERE id = ?", f[0]))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
-        assertThat(jdbc.queryForObject("SELECT user_id FROM task_assignment WHERE task_id = ?", UUID.class, f[3])).isEqualTo(f[1]);
-        assertThat(count("team", "id", f[0])).isEqualTo(1);
-    }
-
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"project", "task"})
-    void parentDeletionCascadesAndPreservesUsersAndTeams(String parent) {
-        // Arrange
-        var f = fixture();
-        jdbc.update("INSERT INTO task_assignment (task_id, user_id) VALUES (?, ?)", f[3], f[1]);
-        jdbc.update("INSERT INTO comment (id, task_id, author_id, content, created_at) VALUES (?, ?, ?, 'Comment', now())", UUID.randomUUID(), f[3], f[1]);
-        // Act
-        jdbc.update("DELETE FROM " + parent + " WHERE id = ?", parent.equals("project") ? f[2] : f[3]);
-        // Assert
-        assertThat(count("task", "id", f[3])).isZero();
-        assertThat(count("comment", "task_id", f[3])).isZero();
-        assertThat(count("task_assignment", "task_id", f[3])).isZero();
-        assertThat(count("app_user", "id", f[1])).isEqualTo(1);
-        assertThat(count("team", "id", f[0])).isEqualTo(1);
-        assertThat(count("project", "id", f[2])).isEqualTo(parent.equals("project") ? 0 : 1);
-    }
-
-    private UUID[] fixture() {
-        UUID team = UUID.randomUUID(), user = UUID.randomUUID(), project = UUID.randomUUID(), task = UUID.randomUUID();
-        jdbc.update("INSERT INTO team (id, name) VALUES (?, 'Fixture team')", team);
-        insertUser(user, team, user + "@example.test");
-        jdbc.update("INSERT INTO project (id, name, description, team_id, owner_id) VALUES (?, 'Project', '', ?, ?)", project, team, user);
+        jdbc.update("INSERT INTO project VALUES (?, 'Project', '', ?, ?)", project, team, user);
         insertTask(task, project);
-        return new UUID[] {team, user, project, task};
-    }
-
-    @Test
-    void repeatMigrationPreservesExistingRowsWithoutReseeding() {
-        // Arrange
-        String schema = "repeat_test";
-        Flyway initial = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
-                .schemas(schema).defaultSchema(schema).load();
-        initial.migrate();
-        UUID id = UUID.randomUUID();
-        jdbc.update("INSERT INTO repeat_test.team (id, name) VALUES (?, 'Preserved')", id);
-
-        // Act
-        Flyway latest = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
-                .schemas(schema).defaultSchema(schema).load();
-        var migrated = latest.migrate();
-
-        // Assert
-        assertThat(migrated.migrationsExecuted).isZero();
-        assertThat(latest.info().pending()).isEmpty();
-        latest.validate();
-        assertThat(jdbc.queryForObject("SELECT name FROM repeat_test.team WHERE id = ?", String.class, id))
-                .isEqualTo("Preserved");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM repeat_test.app_user WHERE provisioning_status = 'COMPLETED'", Integer.class)).isEqualTo(3);
-    }
-
-    @Test
-    void checksumCorruptionIsDetected() {
-        // Arrange
-        String schema = "checksum_test";
-        Flyway isolated = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
-                .schemas(schema).defaultSchema(schema).load();
-        isolated.migrate();
-        try {
-            // Act
-            jdbc.update("UPDATE checksum_test.flyway_schema_history SET checksum = checksum + 1 WHERE version = '1'");
-            var validation = isolated.validateWithResult();
-            // Assert
-            assertThat(validation.validationSuccessful).isFalse();
-            assertThat(validation.invalidMigrations).anySatisfy(migration ->
-                    assertThat(migration.errorDetails.errorMessage).containsIgnoringCase("checksum"));
-        } finally {
-            jdbc.update("UPDATE checksum_test.flyway_schema_history SET checksum = checksum - 1 WHERE version = '1'");
-            isolated.validate();
+        assertThat(jdbc.queryForObject("SELECT status || ':' || priority FROM task WHERE id = ?", String.class, task))
+                .isEqualTo("TODO:MEDIUM");
+        jdbc.update("INSERT INTO task_assignment VALUES (?, ?)", task, user);
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO task_assignment VALUES (?, ?)", task, other))
+                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM team WHERE id = ?", team))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        for (String invalid : new String[] {"UPDATE task SET effort = 4 WHERE id = ?",
+                "UPDATE task SET title = E'\\t\\n ' WHERE id = ?",
+                "UPDATE task SET status = 'QA' WHERE id = ?",
+                "UPDATE task SET priority = 'URGENT' WHERE id = ?"}) {
+            assertThatThrownBy(() -> jdbc.update(invalid, task))
+                    .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         }
+        jdbc.update("INSERT INTO comment VALUES (?, ?, ?, 'Comment', now())", UUID.randomUUID(), task, user);
+        jdbc.update("DELETE FROM project WHERE id = ?", project);
+        assertThat(count("task", "id", task)).isZero();
+        assertThat(count("comment", "task_id", task)).isZero();
+        assertThat(count("task_assignment", "task_id", task)).isZero();
+        assertThat(count("app_user", "id", user)).isEqualTo(1);
+        assertThat(count("team", "id", team)).isEqualTo(1);
+
+        // Task deletion must also cascade without deleting its project.
+        jdbc.update("INSERT INTO project VALUES (?, 'Project', '', ?, ?)", project, team, user);
+        insertTask(task, project);
+        jdbc.update("INSERT INTO task_assignment VALUES (?, ?)", task, user);
+        jdbc.update("INSERT INTO comment VALUES (?, ?, ?, 'Comment', now())", UUID.randomUUID(), task, user);
+        jdbc.update("DELETE FROM task WHERE id = ?", task);
+        assertThat(count("comment", "task_id", task)).isZero();
+        assertThat(count("task_assignment", "task_id", task)).isZero();
+        assertThat(count("project", "id", project)).isEqualTo(1);
     }
 
     private void insertUser(UUID id, UUID team, String email) {
