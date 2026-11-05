@@ -14,7 +14,7 @@ Projects have an owner derived from the authenticated creator. Backend checks mu
 
 ## Functional requirements
 
-- **FR-01 Authentication:** Email/password login through Keycloak, logout and authenticated-profile retrieval; invalid/expired sessions receive understandable UI handling.
+- **FR-01 Authentication:** Username/password login through Keycloak (the API requires the username field), logout and authenticated-profile retrieval; invalid/expired sessions receive understandable UI handling.
 - **FR-02 Roles:** Administrator, Project Manager and Software Engineer roles are assigned at account creation, owned by Keycloak and enforced by the backend; no post-creation role-change workflow is in scope.
 - **FR-03 User and team administration:** Administrators create and view/list users and teams. At user creation, assign exactly one Keycloak role and exactly one existing team. User updates and deletion were not requested; this includes email/profile edits, role changes and team-membership changes after creation. Team updates (including renaming) and deletion were not requested. These operations are outside scope. User and team listings are paginated; users sort by email and teams sort alphabetically by name.
 - **FR-04 Projects:** Create, list, view and edit accessible projects. Project listings are paginated and sort alphabetically by name. Preserve unique identifier and exactly one team; add authenticated creator as owner. Project name is 3–100 characters; description is at most 1000 characters.
