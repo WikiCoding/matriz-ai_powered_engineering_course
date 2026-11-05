@@ -11,6 +11,7 @@ function useData(path, token, version = 0) {
   useEffect(() => {
     if (!path) {
       request.current = null;
+      setResult({ loading: false, data: null, error: "" });
       return;
     }
     let active = true;
