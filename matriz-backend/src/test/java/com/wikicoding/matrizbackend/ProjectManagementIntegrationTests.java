@@ -106,7 +106,8 @@ class ProjectManagementIntegrationTests {
         // Act / Assert
         assertThatThrownBy(() -> tasks.updateTask(task,
                 new TaskUpdateRequest("Unchanged task", "", (short) 4, null, null, destination)))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOfSatisfying(ResponseStatusException.class, error ->
+                        assertThat(error.getStatusCode().value()).isEqualTo(400));
         assertThat(tasks.findTaskById(task).getProjectId()).isEqualTo(source);
         assertThat(assignee(task)).isEqualTo(engineer);
     }
@@ -168,6 +169,120 @@ class ProjectManagementIntegrationTests {
         assertThat(assignee(task)).isNull();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE id = ?", Integer.class, firstEngineer))
                 .isEqualTo(1);
+    }
+
+    @Test
+    void concurrentAssignmentsHaveExactlyOneWinner() throws Exception {
+        // Arrange: the barrier puts both transactions past the initial existence check.
+        UUID team = team("Concurrent"), owner = user(team);
+        UUID task = task(project(team, owner, "Concurrent"), "Concurrent", Status.TODO, Priority.LOW, Instant.EPOCH);
+        UUID first = user(team), second = user(team);
+        var barrier = new java.util.concurrent.CyclicBarrier(2);
+        org.mockito.Mockito.doAnswer(call -> { barrier.await(10, java.util.concurrent.TimeUnit.SECONDS); return null; })
+                .when(eligibility).requireSoftwareEngineerInTeam(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(team));
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            // Act
+            var outcomes = executor.invokeAll(java.util.List.of(
+                    (java.util.concurrent.Callable<Integer>) () -> assignOutcome(task, first),
+                    () -> assignOutcome(task, second)), 20, java.util.concurrent.TimeUnit.SECONDS);
+            // Assert
+            assertThat(java.util.List.of(outcomes.get(0).get(), outcomes.get(1).get()))
+                    .containsExactlyInAnyOrder(201, 409);
+            assertThat(assignee(task)).isIn(first, second);
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM task_assignment WHERE task_id = ?", Integer.class, task)).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    private int assignOutcome(UUID task, UUID user) {
+        try { assignments.add(task, user); return 201; }
+        catch (ResponseStatusException error) { return error.getStatusCode().value(); }
+    }
+
+    @Test
+    void databaseFailureAfterCleanupRollsBackTaskMoveAndAssignment() {
+        // Arrange: a disposable constraint rejects the final write after assignment cleanup.
+        UUID team = team("Rollback"), otherTeam = team("Rollback target"), engineer = user(team);
+        UUID source = project(team, engineer, "Source"), destination = project(otherTeam, engineer, "Target");
+        UUID task = task(source, "Rollback", Status.TODO, Priority.LOW, Instant.EPOCH);
+        assign(task, engineer);
+        String constraint = "test_move_" + UUID.randomUUID().toString().replace("-", "");
+        jdbc.execute("ALTER TABLE task ADD CONSTRAINT " + constraint + " CHECK (id <> '" + task + "'::uuid OR project_id <> '" + destination + "'::uuid)");
+        try {
+            // Act / Assert
+            assertThatThrownBy(() -> tasks.updateTask(task, new TaskUpdateRequest(null, null, null, null, null, destination)))
+                    .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+            assertThat(tasks.findTaskById(task).getProjectId()).isEqualTo(source);
+            assertThat(assignee(task)).isEqualTo(engineer);
+        } finally {
+            jdbc.execute("ALTER TABLE task DROP CONSTRAINT " + constraint);
+        }
+    }
+
+    @Test
+    void movingWithinSameTeamPreservesAssignment() {
+        // Arrange
+        UUID team = team("Same team"), engineer = user(team);
+        UUID source = project(team, engineer, "Source"), destination = project(team, engineer, "Target");
+        UUID task = task(source, "Move", Status.TODO, Priority.LOW, Instant.EPOCH);
+        assign(task, engineer);
+        // Act
+        tasks.updateTask(task, new TaskUpdateRequest(null, null, null, null, null, destination));
+        // Assert
+        assertThat(tasks.findTaskById(task).getProjectId()).isEqualTo(destination);
+        assertThat(assignee(task)).isEqualTo(engineer);
+    }
+
+    @Test
+    void independentFiltersAndStablePaginationReadPersistedTasks() {
+        // Arrange
+        UUID team = team("Filters"), owner = user(team), project = project(team, owner, "Filters");
+        UUID one = task(project, "One", Status.TODO, Priority.HIGH, Instant.EPOCH);
+        UUID two = task(project, "Two", Status.DONE, Priority.HIGH, Instant.EPOCH);
+        UUID three = task(project, "Three", Status.TODO, Priority.LOW, Instant.EPOCH);
+        // Act
+        var status = tasks.findAllTasks(project, Status.TODO, null, 0, 100);
+        var priority = tasks.findAllTasks(project, null, Priority.HIGH, 0, 100);
+        var first = tasks.findAllTasks(project, null, null, 0, 2);
+        var second = tasks.findAllTasks(project, null, null, 1, 2);
+        // Assert: PostgreSQL compares UUIDs by their unsigned byte representation.
+        assertThat(status.getContent()).extracting("id").containsExactlyInAnyOrder(one, three);
+        assertThat(priority.getContent()).extracting("id").containsExactlyInAnyOrder(one, two);
+        var expected = java.util.stream.Stream.of(one, two, three).sorted(java.util.Comparator.comparing(UUID::toString)).toList();
+        assertThat(first.getContent()).extracting("id").containsExactlyElementsOf(expected.subList(0, 2));
+        assertThat(second.getContent()).extracting("id").containsExactly(expected.get(2));
+        assertThat(first.getTotalElements()).isEqualTo(3);
+        assertThat(first.getTotalPages()).isEqualTo(2);
+        assertThat(second.isLast()).isTrue();
+    }
+
+    @Autowired com.wikicoding.matrizbackend.user.services.UserService users;
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"engineer", "wrongTeam", "wrongRole", "unavailable"})
+    void eligibilityAdapterUsesPersistedTeamAndProviderRoles(String scenario) {
+        // Arrange: only the identity provider response is simulated; user lookup uses PostgreSQL.
+        UUID team = team("Eligibility"), owner = user(team);
+        UUID candidate = user(scenario.equals("wrongTeam") ? team("Other") : team);
+        UUID task = task(project(team, owner, "Eligibility"), "Eligibility", Status.TODO, Priority.LOW, Instant.EPOCH);
+        var client = org.springframework.web.reactive.function.client.WebClient.builder().exchangeFunction(request -> {
+            if (scenario.equals("unavailable")) return reactor.core.publisher.Mono.error(new IllegalStateException("Provider unavailable"));
+            String body = request.url().getPath().endsWith("/token") ? "{\"access_token\":\"test\"}"
+                    : scenario.equals("wrongRole") ? "[{\"name\":\"PROJECT_MANAGER\"}]" : "[{\"name\":\"SOFTWARE_ENGINEER\"}]";
+            return reactor.core.publisher.Mono.just(org.springframework.web.reactive.function.client.ClientResponse
+                    .create(org.springframework.http.HttpStatus.OK).header("Content-Type", "application/json").body(body).build());
+        }).build();
+        var adapter = new com.wikicoding.matrizbackend.user.services.KeycloakUserEligibility(users, client, "test", "test", "test");
+        org.mockito.Mockito.doAnswer(call -> { adapter.requireSoftwareEngineerInTeam(call.getArgument(0), call.getArgument(1)); return null; })
+                .when(eligibility).requireSoftwareEngineerInTeam(candidate, team);
+        // Act
+        int outcome = assignOutcome(task, candidate);
+        // Assert
+        assertThat(outcome).isEqualTo(scenario.equals("engineer") ? 201 : scenario.equals("unavailable") ? 503 : 400);
+        assertThat(assignee(task)).isEqualTo(scenario.equals("engineer") ? candidate : null);
     }
 
     private UUID team(String name) {

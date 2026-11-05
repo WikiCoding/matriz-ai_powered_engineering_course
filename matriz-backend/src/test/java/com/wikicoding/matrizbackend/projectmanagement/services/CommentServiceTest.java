@@ -26,7 +26,7 @@ class CommentServiceTest {
     private final CommentService service = new CommentService(comments, tasks, authors);
 
     @Test
-    void listsCommentsForExistingTaskInStableOrder() {
+    void requestsAscendingCreationDateAndIdSortForExistingTask() {
         // Arrange
         UUID taskId = UUID.randomUUID();
         when(tasks.existsById(taskId)).thenReturn(true);
@@ -38,7 +38,7 @@ class CommentServiceTest {
         // Assert
         assertThat(result).isEmpty();
         verify(comments).findByTaskId(eq(taskId), argThat(sort ->
-                sort.getOrderFor("createdAt") != null && sort.getOrderFor("id") != null));
+                sort.equals(Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id")))));
     }
 
     @Test

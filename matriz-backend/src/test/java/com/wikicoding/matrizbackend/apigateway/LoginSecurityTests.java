@@ -1,4 +1,4 @@
-package com.wikicoding.matrizbackend.edge.configs;
+package com.wikicoding.matrizbackend.apigateway;
 
 
 import com.nimbusds.jwt.JWTClaimsSet;
