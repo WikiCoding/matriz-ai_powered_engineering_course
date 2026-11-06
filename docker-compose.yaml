@@ -17,7 +17,8 @@ services:
   backend:
     profiles: [prod]
     build:
-      context: ./matriz-backend
+      context: .
+      dockerfile: matriz-backend/Dockerfile
     depends_on:
       app-db:
         condition: service_healthy

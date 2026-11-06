@@ -38,7 +38,7 @@ Start the supporting services:
 docker compose up
 ```
 
-Build the backend first with `./mvnw verify` from `matriz-backend` (Windows: `.\mvnw.cmd verify`), with Docker running for integration tests. Then start the backend and supporting services:
+Build and start the backend and supporting services. The image build packages the backend and frontend:
 
 ```text
 docker compose --profile prod up
@@ -83,7 +83,7 @@ Schema design and API contracts are approved with the customer revisions recorde
 
 ## Single Java deployment (2026-10-30)
 
-First run `./mvnw verify` from `matriz-backend` (Windows: `.\mvnw.cmd verify`), then run `docker compose --profile prod up --build` from the repository root to build the consolidated backend at `http://localhost:8080`. Login, registration, logout, IP limiting and session validation now run in this process. The separate `matriz-api-gateway` is not deployed. Supporting Keycloak, PostgreSQL and Redis services remain separate. Frontend and observability services are currently commented out in Compose. See [backend setup](matriz-backend/README.md) for configuration and verification limits.
+Run `docker compose --profile prod up --build` from the repository root to build the consolidated backend at `http://localhost:8080`. Login, registration, logout, IP limiting and session validation now run in this process. The separate `matriz-api-gateway` is not deployed. Supporting Keycloak, PostgreSQL and Redis services remain separate. Frontend and observability services are currently commented out in Compose. See [backend setup](matriz-backend/README.md) for configuration and verification limits.
 
 
 ## Superseding decision D-16 (2026-10-30)
