@@ -67,6 +67,8 @@ For narrower diagnostics, keep `APP_LOG_LEVEL=INFO` and configure `logging.level
 
 ## Verification commands
 
+`FrontendServingTests` uses dedicated resources from `src/test/resources/frontend-fixtures` to verify the backend's page forwarding, static-resource access and security rules. These checks do not require a frontend build and do not verify frontend packaging; the Maven frontend build/copy steps were removed when the Docker services were separated.
+
 From `matriz-backend`, run `mvnw.cmd -Dtest=ModuleStructureTests test` on Windows (or `./mvnw -Dtest=ModuleStructureTests test` elsewhere). The test checks the three detected modules and verifies Modulith boundaries without starting Spring or requiring PostgreSQL. Run `mvnw.cmd test` (or `mvn test` with installed Maven) with Docker running for the full suite. The Spring Boot integration tests use a disposable PostgreSQL 16.4 container, apply the same migration on startup, and cover repeat migration, checksum mismatch detection, constraints and cascades. They do not migrate the local Compose database.
 
 The existing POM pins Spring Modulith 2.1.1, while `docs/architecture.md` records 2.1.2. Dependency alignment is outstanding; this scaffolding change preserves the existing dependency versions.

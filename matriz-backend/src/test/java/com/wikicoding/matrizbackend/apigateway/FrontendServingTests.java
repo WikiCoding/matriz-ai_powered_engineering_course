@@ -52,8 +52,8 @@ class FrontendServingTests {
     }
 
     @Test
-    void builtIndexIsPublic() throws Exception {
-        // Arrange: Maven copies the frontend build into the static classpath directory.
+    void indexResourceIsPublic() throws Exception {
+        // Arrange: a test-only index is served by the configured resource handler.
         // Act
         var result = client.perform(get("/index.html"));
         // Assert
@@ -62,11 +62,13 @@ class FrontendServingTests {
 
     @Test
     void publicAssetSupportsHead() throws Exception {
-        // Arrange: favicon.ico comes from the frontend public directory.
+        // Arrange: a test-only stylesheet is served under the public static path.
         // Act
-        var result = client.perform(head("/favicon.ico"));
+        var result = client.perform(head("/static/test.css"));
         // Assert
-        result.andExpect(status().isOk());
+        result.andExpect(status().isOk())
+                .andExpect(content().contentType("text/css"))
+                .andExpect(content().string(""));
     }
 
     @ParameterizedTest
@@ -98,7 +100,7 @@ class FrontendServingTests {
 
         @Override
         public void addResourceHandlers(ResourceHandlerRegistry registry) {
-            registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
+            registry.addResourceHandler("/**").addResourceLocations("classpath:/frontend-fixtures/");
         }
     }
 }

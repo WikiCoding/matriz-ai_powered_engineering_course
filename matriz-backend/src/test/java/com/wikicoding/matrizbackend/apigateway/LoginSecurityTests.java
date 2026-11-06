@@ -472,8 +472,8 @@ class LoginSecurityTests {
             }).build();
         }
         @Bean
-        UserAccounts userAccounts(TestState state) {
-            var profiles = mock(UserAccounts.class);
+        UserService userService(TestState state) {
+            var profiles = mock(UserService.class);
             when(profiles.createUser(anyString(), anyString(), any())).thenAnswer(call -> {
                 if (state.backendDown.get()) throw new IllegalStateException("Local persistence unavailable");
                 return new Profile(java.util.UUID.randomUUID(), "new.user@example.com");
@@ -484,8 +484,6 @@ class LoginSecurityTests {
         AuthenticationController authenticationController(WebClient keycloakWebClient, ReactiveJwtDecoder decoder) {
             return new AuthenticationController(keycloakWebClient, "matriz", "matriz-client", decoder);
         }
-        @Bean
-        UserService userService() { return mock(UserService.class); }
         @Bean
         UserDisplayService userDisplayService() { return mock(UserDisplayService.class); }
         @Bean
