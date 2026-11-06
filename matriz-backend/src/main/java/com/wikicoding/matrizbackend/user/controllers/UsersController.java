@@ -35,8 +35,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/users")
 public class UsersController {
     private final UserService users;
@@ -90,8 +92,14 @@ public class UsersController {
                 .flatMap(keycloakUserId -> assignRealmRole(token, keycloakUserId, request.role())
                         .then(createLocalProfile(keycloakUserId, request))
                         .map(profile -> ResponseEntity.status(HttpStatus.CREATED).body(profile))
+                        .doOnSuccess(profile -> log.debug("Account provisioning completed"))
                         .onErrorResume(failure -> deleteKeycloakUser(token, keycloakUserId)
-                                .onErrorResume(deleteFailure -> Mono.empty())
+                                .doOnSuccess(ignored -> log.debug("Account provisioning compensation completed"))
+                                .onErrorResume(deleteFailure -> {
+                                    log.error("Account provisioning compensation failed; reconciliation required exception={}",
+                                            deleteFailure.getClass().getSimpleName());
+                                    return Mono.empty();
+                                })
                                 .then(Mono.error(asProvisioningFailure(failure))))));
     }
 

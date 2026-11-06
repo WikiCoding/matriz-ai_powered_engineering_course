@@ -18,7 +18,27 @@ Flyway runs automatically at backend startup using the Spring Data JPA datasourc
 
 The Keycloak realm import runs only for a new Keycloak data volume. An existing Keycloak volume retains its old user IDs, so V4 alone cannot link those users; reconcile their subjects with the actual Keycloak IDs before using the demo accounts. Do not delete volumes to perform that reconciliation.
 
-## Verification
+## Bundled frontend
+
+Install Node.js and npm on the Linux build machine and keep `matriz-frontend` beside `matriz-backend`. Maven runs `npm ci` and `npm run build` in that sibling directory during `generate-resources`, then copies the build into `target/classes/static` during `process-resources`. The Spring Boot JAR includes those files; Node.js is not needed in the runtime image.
+
+Use `.\mvnw.cmd clean verify` on Windows (or `./mvnw clean verify` elsewhere) for a fresh deployment build, with Docker running for integration tests. Cleaning removes assets from previous frontend builds. For a focused build/copy check without Java tests, use `.\mvnw.cmd process-resources`. Maven lifecycle commands reaching this phase now also build the frontend and require npm registry access or a populated npm cache.
+
+Leave `REACT_APP_API_BASE_URL` empty to use the backend's origin. Spring serves the bundled UI at `http://localhost:8080`; GET/HEAD access to the known UI routes and static assets is public. Known React page routes forward to `index.html` to support refresh/direct navigation. API authorization remains unchanged. Unmapped paths do not receive an SPA fallback.
+
+## Application logging
+
+Application logs default to INFO. Set `APP_LOG_LEVEL=DEBUG` in the backend process environment to enable API request summaries, login/logout outcomes, account-provisioning compensation and Keycloak call status/timing. Routine requests and expected client errors do not emit INFO/WARN entries. HTTP 5xx responses, unhandled request failures and failed provisioning compensation emit ERROR entries.
+
+Team, project, task, comment and assignment services also use DEBUG for operation progress, fixed rejection reasons, task status/priority, eligibility checks and assignment cleanup after project-team changes or task moves. Write/flush entries explicitly await transaction commit; they are not proof of committed success. Unexpected failures remain ERROR at the HTTP boundary to avoid duplicate error logs. No business content or identity/resource identifiers are logged. The console includes the request ID through MDC while executing the servlet dispatch, linking synchronous service decisions to the HTTP summary; this context is restored on exit and is not automatically propagated to reactive worker threads. Enable just `logging.level.com.wikicoding.matrizbackend.team.services=DEBUG` or `logging.level.com.wikicoding.matrizbackend.projectmanagement.services=DEBUG` for focused module diagnostics.
+
+API summaries include a generated request ID, the matched route template, status and elapsed milliseconds. MVC asynchronous responses are logged on their completing dispatch. Unmatched requests (including rejections before MVC) use `unmapped`; static assets and Actuator polling are excluded. Raw URLs, query strings, client addresses, identity values, headers and response bodies are not logged. Exception diagnostics report the exception class only, because exception messages and causes may contain confidential values.
+
+To inspect sanitized request bodies, also set `APP_LOG_REQUEST_BODIES=true`. Both this flag and DEBUG are required. This logs the converted request DTO with field names; only typed task status, priority and effort values are retained. All other values, including names, descriptions, comments, identifiers, passwords and tokens, are redacted by default. No raw-body fallback is used: malformed JSON and requests rejected before conversion have no body entry. Unknown/non-record body types have an empty field projection. Body logging does not buffer or consume the request stream separately. Keep framework HTTP, security and SQL payload logging disabled when handling confidential data.
+
+For narrower diagnostics, keep `APP_LOG_LEVEL=INFO` and configure `logging.level.com.wikicoding.matrizbackend.apigateway.configs.HttpRequestLoggingFilter=DEBUG` and/or `logging.level.com.wikicoding.matrizbackend.apigateway.configs.RequestBodyLoggingAdvice=DEBUG` in the backend configuration. These settings use existing SLF4J/Logback support and add no telemetry exporter or retention policy.
+
+## Verification commands
 
 From `matriz-backend`, run `mvnw.cmd -Dtest=ModuleStructureTests test` on Windows (or `./mvnw -Dtest=ModuleStructureTests test` elsewhere). The test checks the three detected modules and verifies Modulith boundaries without starting Spring or requiring PostgreSQL. Run `mvnw.cmd test` (or `mvn test` with installed Maven) with Docker running for the full suite. The Spring Boot integration tests use a disposable PostgreSQL 16.4 container, apply the same migration on startup, and cover repeat migration, checksum mismatch detection, constraints and cascades. They do not migrate the local Compose database.
 

@@ -13,10 +13,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CommentService {
     private final CommentRepository comments;
@@ -25,6 +27,7 @@ public class CommentService {
 
     @Transactional(readOnly = true)
     public List<Comment> findAllCommentsFromTask(UUID taskId) {
+        log.debug("Operation started: findAllCommentsFromTask");
         requireTask(taskId);
         return comments.findByTaskId(taskId, Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id")))
                 .stream().map(this::toDomain).toList();
@@ -32,33 +35,42 @@ public class CommentService {
 
     @Transactional(readOnly = true)
     public Comment findCommentById(UUID commentId) {
+        log.debug("Operation started: findCommentById");
         return comments.findById(commentId).map(this::toDomain)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+                .orElseThrow(() -> rejected(HttpStatus.NOT_FOUND, "Comment not found"));
     }
 
     @Transactional
     public Comment createComment(CommentRequest request, String subject) {
+        log.debug("Operation started: createComment");
         requireTask(request.taskId());
         UUID authorId = authorLookup.requireActiveOwnerId(subject);
         Comment comment;
         try {
             comment = new Comment(UUID.randomUUID(), request.taskId(), authorId, request.content(), Instant.now());
         } catch (IllegalArgumentException | NullPointerException exception) {
+            log.debug("Domain validation rejected input exception={}", exception.getClass().getSimpleName());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
         comments.save(new CommentDataModel(comment.getId(), comment.getTaskId(), comment.getAuthorId(),
                 comment.getContent(), comment.getCreatedAt()));
+        log.debug("Comment creation staged; awaiting transaction commit");
         return comment;
     }
 
     private void requireTask(UUID taskId) {
         if (taskId == null || !tasks.existsById(taskId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found");
+            throw rejected(HttpStatus.NOT_FOUND, "Task not found");
         }
     }
 
     private Comment toDomain(CommentDataModel stored) {
         return new Comment(stored.getId(), stored.getTaskId(), stored.getAuthorId(),
                 stored.getContent(), stored.getCreatedAt());
+    }
+
+    private ResponseStatusException rejected(HttpStatus status, String reason) {
+        log.debug("Operation rejected status={} reason={}", status.value(), reason);
+        return new ResponseStatusException(status, reason);
     }
 }

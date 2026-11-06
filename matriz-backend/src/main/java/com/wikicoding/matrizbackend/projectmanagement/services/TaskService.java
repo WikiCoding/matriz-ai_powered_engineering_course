@@ -19,10 +19,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class TaskService {
     private final TaskRepository taskRepository;
@@ -31,10 +33,11 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public Page<Task> findAllTasks(UUID projectId, Status status, Priority priority, int page, int size) {
+        log.debug("Operation started: findAllTasks");
         validateProjectExistsById(projectId);
 
         if (page < 0 || size < 1 || size > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination parameters");
+            throw rejected(HttpStatus.BAD_REQUEST, "Invalid pagination parameters");
         }
         Specification<TaskDataModel> filter = (root, query, builder) ->
                 builder.equal(root.get("projectId"), projectId);
@@ -53,11 +56,13 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public Task findTaskById(UUID id) {
+        log.debug("Operation started: findTaskById");
         return toDomain(getTaskById(id));
     }
 
     @Transactional
     public Task createTask(TaskRequest request) {
+        log.debug("Operation started: createTask");
         UUID projectId = request.projectId();
 
         validateProjectExistsById(projectId);
@@ -71,17 +76,20 @@ public class TaskService {
         taskRepository.save(new TaskDataModel(task.getId(), projectId, task.getTitle(), task.getDescription(),
                 task.getEffort(), task.getStatus(), task.getPriority(), now, now, 0));
 
+        log.debug("Task write staged status={} priority={}; awaiting transaction commit",
+                task.getStatus(), task.getPriority());
         return task;
     }
 
     @Transactional
     public Task updateTask(UUID id, TaskUpdateRequest request) {
+        log.debug("Operation started: updateTask");
         TaskDataModel stored = getTaskById(id);
 
         UUID projectId = request.projectId() == null ? stored.getProjectId() : request.projectId();
 
         var destination = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+                .orElseThrow(() -> rejected(HttpStatus.NOT_FOUND, "Project not found"));
 
         Instant now = Instant.now();
 
@@ -93,20 +101,26 @@ public class TaskService {
 
         if (!stored.getProjectId().equals(projectId)) {
             taskAssignmentRepository.deleteInvalidForTask(id, destination.getTeamId());
+            log.debug("Task moved to another project; invalid-assignment cleanup executed in current transaction");
         }
 
         stored.changeDetails(projectId, task.getTitle(), task.getDescription(), task.getEffort(),
                 task.getStatus(), task.getPriority(), now);
         taskRepository.flush();
 
+        log.debug("Task write staged status={} priority={}; awaiting transaction commit",
+                task.getStatus(), task.getPriority());
         return task;
     }
 
     @Transactional
     public void deleteTask(UUID id) {
+        log.debug("Operation started: deleteTask");
         TaskDataModel task = getTaskById(id);
+        log.debug("Task deletion requested with comment and assignment cascades");
         taskRepository.delete(task);
         taskRepository.flush();
+        log.debug("Task deletion flushed; awaiting transaction commit");
     }
 
     private Task toTaskDomain(UUID id, UUID projectId, String title, String description, Short effort,
@@ -115,6 +129,7 @@ public class TaskService {
             return new Task(id, projectId, title, description, effort == null ? 0 : effort,
                     status, priority, createdAt, updatedAt);
         } catch (IllegalArgumentException | NullPointerException exception) {
+            log.debug("Domain validation rejected input exception={}", exception.getClass().getSimpleName());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
     }
@@ -125,12 +140,17 @@ public class TaskService {
     }
 
     private TaskDataModel getTaskById(UUID id) {
-        return taskRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+        return taskRepository.findById(id).orElseThrow(() -> rejected(HttpStatus.NOT_FOUND, "Task not found"));
     }
 
     private void validateProjectExistsById(UUID id) {
         if (id == null || !projectRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found");
+            throw rejected(HttpStatus.NOT_FOUND, "Project not found");
         }
+    }
+
+    private ResponseStatusException rejected(HttpStatus status, String reason) {
+        log.debug("Operation rejected status={} reason={}", status.value(), reason);
+        return new ResponseStatusException(status, reason);
     }
 }

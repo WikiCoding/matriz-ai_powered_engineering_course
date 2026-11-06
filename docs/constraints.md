@@ -25,6 +25,8 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 
 ## Remaining decision register
 
+The customer approved bundling the React production build in the Spring Boot JAR on 2026-11-05, including public read access to UI pages/assets and forwarding known React routes to the entry page. Maven builds and copies the frontend using the installed Node.js/npm toolchain. API authorization remains unchanged.
+
 Registration requires nonblank first and last names (customer revision 2026-10-31). The backend supplies them to Keycloak so the verified account has a complete profile for direct login.
 
 Approvals of proposals 1–8 settle business behavior and delegate technical security/schema/interface completion. Do not reopen delegated implementation details as customer blockers. Production is now explicitly deferred, business audit storage and fixed log retention are out of scope, and the response-time percentile is p95. No unresolved business-rule decision blocks starting local implementation.
