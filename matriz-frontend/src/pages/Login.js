@@ -4,7 +4,7 @@ import Message from "../components/Message";
 import { useMutation } from "../hooks/useMutation";
 
 function Login({ login, expired }) {
-  const [username, setUsername] = useState(""),
+  const [email, setEmail] = useState(""),
     [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const mutation = useMutation();
@@ -14,7 +14,8 @@ function Login({ login, expired }) {
         className="login-card"
         onSubmit={(e) => {
           e.preventDefault();
-          mutation.run(() => login(username, password));
+          if (!e.currentTarget.reportValidity()) return;
+          mutation.run(() => login(email, password));
         }}
       >
         <div className="logo-mark">M</div>
@@ -27,13 +28,13 @@ function Login({ login, expired }) {
           }
         />
         <Field
-          label="Username"
-          value={username}
-          onChange={setUsername}
-          type="text"
+          label="Email"
+          value={email}
+          onChange={setEmail}
+          type="email"
           required
           autoComplete="username"
-          placeholder="Your username"
+          placeholder="Your email"
         />
         <Field
           label="Password"

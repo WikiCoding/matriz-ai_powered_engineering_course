@@ -1,6 +1,7 @@
 package com.wikicoding.matrizbackend.user.controllers;
 
 import com.wikicoding.matrizbackend.security.AuthorizationHelper;
+import jakarta.validation.Valid;
 import com.wikicoding.matrizbackend.user.Profile;
 import com.wikicoding.matrizbackend.user.UserAccounts;
 import com.wikicoding.matrizbackend.user.dtos.Display;
@@ -82,7 +83,7 @@ public class UsersController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<Profile>> register(@AuthenticationPrincipal Jwt administrator,
-                                                  @RequestBody RegisterRequest request) {
+                                                  @Valid @RequestBody RegisterRequest request) {
         if (administrator == null) return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (!hasAdministratorRole(administrator)) {
             return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN));
@@ -133,7 +134,7 @@ public class UsersController {
 
     private Mono<String> createKeycloakUser(KeycloakTokenResponse token, RegisterRequest request) {
         Map<String, Object> body = Map.of(
-                "username", request.username(), "email", request.email(),
+                "username", request.email(), "email", request.email(),
                 "firstName", request.firstName().trim(), "lastName", request.lastName().trim(),
                 "emailVerified", true, "enabled", true,
                 "credentials", List.of(Map.of("type", "password", "value", request.password(), "temporary", false)),
@@ -176,12 +177,12 @@ public class UsersController {
     }
 
     private void validateRegistration(RegisterRequest request) {
-        if (request == null || isBlank(request.username()) || isBlank(request.email())
+        if (request == null || isBlank(request.email())
                 || isBlank(request.firstName()) || isBlank(request.lastName()) || isBlank(request.password())
                 || request.password().length() < 6 || request.teamId() == null
                 || !List.of("ADMINISTRATOR", "PROJECT_MANAGER", "SOFTWARE_ENGINEER").contains(request.role())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "username, email, firstName, lastName, password, role and teamId are required");
+                    "email, firstName, lastName, password, role and teamId are required");
         }
     }
 

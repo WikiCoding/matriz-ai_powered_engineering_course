@@ -83,8 +83,22 @@ The customer did not request project-name search in the source assignment, so it
 
 ## Login request clarification (2026-11-05)
 
-The customer confirmed that backend login requires username and password, not an email field. The API contract and HTTP example now match the existing backend. Email remains part of account provisioning and profile data.
+The 2026-11-05 username-based API clarification and the initial 2026-11-06 label-only change are superseded by the customer's email-only identity decision below.
+
+## Email-only identity (2026-11-06)
+
+The customer requested that usernames equal email everywhere and that application APIs request only email. Login accepts `email` and `password`; account creation accepts `email`, names, password, role and team without a separate `username`. Both endpoints require a nonblank, valid email address before calling Keycloak. Provisioning sets the Keycloak username and email to the supplied email. The Keycloak token protocol still requires the parameter named `username`; the backend maps email to it internally. Email uniqueness remains case-insensitive.
+
+The imported realm enables email-as-username and email login, disallows duplicate emails and username editing. Keycloak service accounts retain their protocol-managed usernames. Existing realm settings and human usernames are not changed by startup import; align them through Keycloak administration while preserving identity IDs and application profile links. No application user-update API or data reset is introduced. This is a breaking application request-contract change: callers must send `email` rather than `username` for login and omit `username` during creation.
 
 ## Actuator access approval (2026-11-05)
 
 The customer requested anonymous access for all HTTP methods at `/actuator` and `/actuator/**`, and web exposure of all available Actuator endpoints (`management.endpoints.web.exposure.include=*`). This supersedes the earlier restricted Actuator exposure/access baseline. Endpoint availability and supported operations still follow Spring Boot's endpoint configuration.
+
+## Keycloak storage (2026-11-06)
+
+The customer requested Keycloak persistence on the existing PostgreSQL service. Use a separate Keycloak database and role, consistent with the approved architecture. Keycloak owns its schema/migrations; application Flyway does not modify identity tables. Compose provisions missing identity storage before Keycloak startup, including on existing PostgreSQL volumes. Embedded Keycloak data migration is not automatic.
+
+## Logging dependencies (2026-11-06)
+
+The customer approved adding the OpenTelemetry logging dependencies to implement the already selected direct Logback-to-Loki pipeline. Spring Boot manages the OpenTelemetry starter/SDK/exporter versions; the Logback appender is pinned explicitly to 2.28.0-alpha, whose instrumentation release targets SDK 1.62.0. This corrects the initial 2.21.0-alpha pin, which pulled incubator API 1.55.0-alpha and caused a startup NoSuchMethodError with SDK 1.62.0. No collector or trace store is introduced. Runtime delivery and dependency compatibility must be verified before claiming end-to-end completion.

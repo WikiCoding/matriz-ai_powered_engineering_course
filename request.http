@@ -3,7 +3,7 @@
 # Start with docker compose --profile prod up (see README.md for build setup).
 # Set credentials/tokens locally; never commit real passwords or tokens.
 # Fresh demo accounts require completing the temporary-password change in Keycloak.
-# Login requires username and password; demo usernames are email-shaped.
+# Login requires email and password; provisioning derives the Keycloak username from email.
 # Copy login tokens into access_token and refresh_token below.
 # Logout requires tokens from the same login. Run it last and clear both tokens
 # afterward; issued access tokens remain valid until expiry.
@@ -41,7 +41,7 @@ POST {{BASE_URL}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin@matriz.local",
+  "email": "admin@matriz.local",
   "password": "MatrizAdmin123!"
 }
 
@@ -81,7 +81,6 @@ Content-Type: application/json
 Authorization: Bearer {{access_token}}
 
 {
-  "username": "newuser@matriz.local",
   "email": "newuser@matriz.local",
   "firstName": "New",
   "lastName": "User",

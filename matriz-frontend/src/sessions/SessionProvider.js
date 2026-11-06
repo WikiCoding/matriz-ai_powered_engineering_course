@@ -46,8 +46,8 @@ export function SessionProvider({ children }) {
     };
   }, [tokens, profile]);
 
-  async function login(username, password) {
-    const nextTokens = await signIn(username, password);
+  async function login(email, password) {
+    const nextTokens = await signIn(email, password);
     const user = await getProfile(nextTokens.access_token);
     saveSession(nextTokens);
     setProfile(user);

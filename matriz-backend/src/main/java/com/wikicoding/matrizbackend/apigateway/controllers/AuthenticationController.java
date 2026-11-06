@@ -1,6 +1,7 @@
 package com.wikicoding.matrizbackend.apigateway.controllers;
 
 import com.nimbusds.jwt.JWTParser;
+import jakarta.validation.Valid;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.Objects;
@@ -47,14 +48,11 @@ public class AuthenticationController {
 
     @PostMapping(value = "login", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<KeycloakTokenResponse> login(@RequestBody LoginRequest request) {
-        if (request == null || isBlank(request.username()) || isBlank(request.password())) {
-            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "username and password are required"));
-        }
+    public Mono<KeycloakTokenResponse> login(@Valid @RequestBody LoginRequest request) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "password");
         form.add("client_id", clientId);
-        form.add("username", request.username());
+        form.add("username", request.email());
         form.add("password", request.password());
 
         return keycloakWebClient.post()
@@ -109,5 +107,4 @@ public class AuthenticationController {
                         "Keycloak logout incomplete. Retry logout."));
     }
 
-    private boolean isBlank(String value) { return value == null || value.isBlank(); }
 }

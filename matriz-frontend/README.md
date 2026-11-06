@@ -2,6 +2,8 @@
 
 React UI for the revised MVP wireframe. The application includes sign-in, a role-specific home, paginated project and task lists, project/task editing, assignment and comments, and administrator user/team creation and lists. The backend remains responsible for authorization and validation.
 
+Sign-in and administrator user creation request email as the account identifier, with no separate username field. Login sends `{email, password}`; the backend derives the Keycloak username from email during provisioning.
+
 ## Source layout
 
 - `src/App.js` defines pages, routes, and role-based route guards.
@@ -28,7 +30,13 @@ The development server runs at `http://localhost:3000`. Copy `.env.example` to `
 | `FRONTEND_DEV_PROXY_TARGET` | Target for `/api/v1` requests through the React development server | `http://localhost:8080` |
 | `REACT_APP_API_BASE_URL` | Backend origin used by browser requests; omit `/api/v1` | Empty (same origin) |
 
-With an empty `REACT_APP_API_BASE_URL`, the browser calls `/api/v1` on the frontend origin. During local development, the development server forwards those requests to `FRONTEND_DEV_PROXY_TARGET`. The backend Maven build bundles the production frontend into the Spring Boot JAR, serving both the UI and `/api/v1` at `http://localhost:8080`; no separate frontend server or reverse proxy is needed for that setup. To call a separate backend origin, set `REACT_APP_API_BASE_URL` (for example, `https://api.example.com`) **before running the build**; React embeds that value in the generated files, so changing it requires a rebuild. The backend must allow the frontend origin. The frontend service is currently commented out in Compose, so it is started separately for local use.
+With an empty `REACT_APP_API_BASE_URL`, the browser calls `/api/v1` on the frontend origin. During local development, the development server forwards those requests to `FRONTEND_DEV_PROXY_TARGET`. The backend Maven build bundles the production frontend into the Spring Boot JAR, serving both the UI and `/api/v1` at `http://localhost:8080`; no separate frontend server or reverse proxy is needed for that setup. To call a separate backend origin, set `REACT_APP_API_BASE_URL` (for example, `https://api.example.com`) **before running the build**; React embeds that value in the generated files, so changing it requires a rebuild. The backend must allow the frontend origin. Compose also supports the separate frontend development server described below.
+
+## Docker Compose frontend
+
+From the repository root, run `docker compose up --build frontend` to build the frontend and start its backend dependencies. Open `http://localhost:3000`.
+
+The Dockerfile uses the repository-root build context configured in Compose, installs the committed lockfile with `npm ci`, and runs the existing React development server on port 3000. Its API proxy targets `http://backend:8080` inside the Compose network. This is a local development server; the bundled Spring Boot UI remains a separate supported setup. Source changes require rebuilding the image because no source volume is mounted.
 
 ## Checks
 
@@ -47,7 +55,7 @@ From this directory, after `npm.cmd ci` and with the isolated application runnin
 
 ```powershell
 npx.cmd playwright install chromium
-$env:E2E_USERNAME = '<project-manager username>'
+$env:E2E_EMAIL = '<project-manager email>'
 $env:E2E_PASSWORD = '<project-manager password>'
 $env:E2E_TEAM_ID = '<existing team UUID>'
 npm.cmd run test:e2e

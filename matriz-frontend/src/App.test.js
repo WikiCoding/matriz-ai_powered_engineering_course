@@ -11,14 +11,16 @@ test('signs in and shows accessible project counts', async () => {
   render(<App />);
 
   // Act
-  fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alex@example.com' } });
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alex@example.com' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
   // Assert
   expect(await screen.findByText('Welcome, Alex')).toBeInTheDocument();
   await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument());
-  expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/auth/login'), expect.objectContaining({ method: 'POST' }));
+  expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/auth/login'), expect.objectContaining({
+    method: 'POST', body: JSON.stringify({ email: 'alex@example.com', password: 'password' }),
+  }));
   expect(fetch.mock.calls.filter(([url]) => url.includes('/users/me'))).toHaveLength(1);
 });
 
@@ -32,7 +34,7 @@ test('loads the software engineer dashboard once under Strict Mode', async () =>
   render(<React.StrictMode><App /></React.StrictMode>);
 
   // Act
-  fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alex@example.com' } });
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alex@example.com' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
   await screen.findByText('Welcome, Alex');

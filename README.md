@@ -62,10 +62,10 @@ Stop the running services while preserving persistent volumes:
 docker compose --profile prod down
 ```
 
-On first startup with a new Keycloak volume, the Compose setup imports the `matriz` realm, the `matriz-client` browser client, the `matriz-provisioning` service client, and one temporary-password user for each application role. The provisioning client uses `KEYCLOAK_PROVISIONING_CLIENT_SECRET`, which defaults only for local development; set this environment variable to a different value before starting Compose if required. The realm import does not update an existing Keycloak volume, so add the service client through the Keycloak Admin Console or recreate the local Keycloak data before relying on this configuration.
-The backend migration V4 also creates a demo team and local profiles linked to these imported users on fresh Keycloak volumes. Existing Keycloak volumes retain their original user IDs and require manual subject reconciliation for these profiles before frontend login can complete.
+On first startup with an empty Keycloak database, the Compose setup imports the `matriz` realm, the `matriz-client` browser client, the `matriz-provisioning` service client, and one temporary-password user for each application role. The provisioning client uses `KEYCLOAK_PROVISIONING_CLIENT_SECRET`, which defaults only for local development; set this environment variable to a different value before starting Compose if required. The realm import does not update an existing realm; add missing clients through the Keycloak Admin Console.
+The backend migration V4 also creates a demo team and local profiles linked to these imported users on fresh Keycloak databases. Existing Keycloak databases retain their original user IDs and require manual subject reconciliation for these profiles before frontend login can complete.
 
-| Role | Username | Initial password |
+| Role | Email | Initial password |
 | --- | --- | --- |
 | Administrator | `admin@matriz.local` | `MatrizAdmin123!` |
 | Project Manager | `manager@matriz.local` | `MatrizManager123!` |
@@ -73,9 +73,11 @@ The backend migration V4 also creates a demo team and local profiles linked to t
 
 These initial credentials are for local development only and must not be reused elsewhere.
 
+Login requests use `email` and `password`. User creation also accepts only email as the account identifier; the backend sets the Keycloak username equal to email. See [email identity setup](matriz-backend/README.md#email-only-identity) for existing realms.
+
 Accounts created through `POST /api/v1/users` are marked email verified and can log in directly with the supplied password. This does not retroactively clear `UPDATE_PASSWORD` for accounts created before the 2026-10-31 policy change.
 
-Observability configuration is supplied for Spring Boot 4.x Actuator/Micrometer applications; enable the currently commented-out observability services before using it. Prometheus is configured to scrape the backend at `/actuator/prometheus`, and Grafana automatically provisions Prometheus and Loki datasources. Open Grafana at `http://localhost:3001` using the configured local Grafana credentials.
+Observability services are enabled in Compose. Prometheus scrapes the backend at `/actuator/prometheus`; backend Logback logs are exported asynchronously over OTLP HTTP to Loki. Grafana provisions both datasources, with Prometheus as the default. Open `http://<host>:3001` (`http://localhost:3001` locally): use **Drilldown > Metrics** with `job = matriz-backend` for metrics, or **Drilldown > Logs** with `service_name = matriz-backend` for logs. See [Grafana navigation](matriz-backend/README.md#viewing-metrics-and-logs-in-grafana). Rebuild/apply logging changes with `docker compose --profile prod up -d --build backend loki grafana`. See [logging setup](matriz-backend/README.md#application-logging) for endpoint overrides and focused checks. Logs from other containers and historical console output are not collected by this pipeline.
 
 ## Status
 
@@ -91,3 +93,13 @@ Run `docker compose --profile prod up --build` from the repository root to build
 The customer removed backend session tracking and IP rate limiting. This supersedes all earlier Redis, limiter, immediate logout, back-channel revocation and immediate role-change invalidation requirements above. Redis is removed from the backend dependencies and Compose. Keycloak retains its own sessions and credential protections. The backend validates JWTs statelessly; logout terminates the Keycloak session, while issued access tokens and role claims remain usable until expiry (five minutes plus validator clock skew). Clients discard tokens on logout. Provider logout failure is reported and can be retried.
 
 Valid tokens require no backend session registration. Missing, invalid and expired tokens remain rejected. Obsolete limiter tests were removed and security tests adjusted. Tests and Docker validation were not run, as requested; prior verification results apply only to the previous implementation. Legacy gateway source remains historical and is not deployed. Existing Redis volumes were not deleted.
+
+## Keycloak PostgreSQL storage
+
+Keycloak uses its own `keycloak` database and login on the existing `app-db` PostgreSQL service. Keycloak creates and migrates its tables; application Flyway migrations remain separate. Both databases persist in `app-db-data`.
+
+Compose runs the one-shot `keycloak-db-init` service after PostgreSQL is healthy and before starting Keycloak. It creates the role/database only when missing, including with an existing PostgreSQL volume. It does not reset existing passwords or data. The PostgreSQL bootstrap user must retain permission to create roles and databases.
+
+Configure `KEYCLOAK_DB_NAME`, `KEYCLOAK_DB_USER` and `KEYCLOAK_DB_PASSWORD` before startup if overriding the local defaults. Database and role names must differ from the application's. For an existing role, supply its actual password; changing the environment does not rotate it. The initializer connects with `APP_DB_USER` and `APP_DB_PASSWORD`; set these to the credentials already stored in your PostgreSQL volume. Set `APP_DB_PASSWORD` explicitly because the existing backend and PostgreSQL local fallback values differ.
+
+Apply with `docker compose --profile prod up -d`. This switches Keycloak from its embedded development database to PostgreSQL and imports the configured realm into an empty database. Existing embedded identities, sessions and configuration are not copied. Export any required realm/users before recreating the old Keycloak container; existing application profiles may need subject reconciliation. Do not delete PostgreSQL volumes to apply this change.

@@ -14,7 +14,6 @@ function Users({ token }) {
   const [page, setPage] = useState(0),
     [version, setVersion] = useState(0),
     [form, setForm] = useState({
-      username: "",
       email: "",
       firstName: "",
       lastName: "",
@@ -30,7 +29,6 @@ function Users({ token }) {
     e.preventDefault();
     if (await mutation.run(() => createUser(token, form), "User created.")) {
       setForm({
-        username: "",
         email: "",
         firstName: "",
         lastName: "",
@@ -68,12 +66,6 @@ function Users({ token }) {
               required
               value={form.lastName}
               onChange={(v) => update("lastName", v)}
-            />
-            <Field
-              label="Username"
-              required
-              value={form.username}
-              onChange={(v) => update("username", v)}
             />
             <Field
               label="Email"

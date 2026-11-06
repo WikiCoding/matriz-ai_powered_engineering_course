@@ -1,5 +1,13 @@
 # Backend scaffold
 
+## Email-only identity
+
+`POST /api/v1/auth/login` accepts `{"email":"user@example.com","password":"..."}`. Administrator-only `POST /api/v1/users` accepts `email`, `firstName`, `lastName`, `password`, `role` and `teamId`; no separate username is requested. Both endpoints reject missing, blank or malformed email with HTTP 400 before contacting Keycloak. Provisioning sets Keycloak's `username` and `email` to the same supplied email and keeps the local profile linked by the returned subject ID. The token endpoint's protocol parameter remains named `username` internally.
+
+This replaces the former application `username` request field; update API callers alongside the backend/frontend. The imported realm enables **Email as username** (`registrationEmailAsUsername`) and **Login with email** (`loginWithEmailAllowed`), disables **Duplicate emails** (`duplicateEmailsAllowed`) and **Edit username** (`editUsernameAllowed`). The demo human accounts already have matching email/usernames. Keycloak-managed service accounts keep their existing usernames.
+
+Startup import does not update an existing realm. In Keycloak administration, apply these realm settings and reconcile any existing human username that differs from its email, preserving user IDs, credentials, roles and application subject links. Resolve missing/duplicate emails before alignment. Do not delete users or volumes, or change application Flyway migrations to edit Keycloak data. Existing email login can work through `loginWithEmailAllowed` while usernames are reconciled. This change does not automatically mutate the running realm or existing accounts.
+
 ## Actuator access
 
 All available Actuator web endpoints are exposed with `management.endpoints.web.exposure.include=*`. `/actuator` and `/actuator/**` permit anonymous requests for every HTTP method; individual endpoints retain their supported operations and availability settings. Approved on 2026-11-05; see the decision register.
@@ -26,7 +34,26 @@ Use `.\mvnw.cmd clean verify` on Windows (or `./mvnw clean verify` elsewhere) fo
 
 Leave `REACT_APP_API_BASE_URL` empty to use the backend's origin. Spring serves the bundled UI at `http://localhost:8080`; GET/HEAD access to the known UI routes and static assets is public. Known React page routes forward to `index.html` to support refresh/direct navigation. API authorization remains unchanged. Unmapped paths do not receive an SPA fallback.
 
+## Viewing metrics and logs in Grafana
+
+Open `http://<host>:3001`, replacing `<host>` with the Docker host (for local development, [localhost](http://localhost:3001)). Sign in using the configured Grafana credentials.
+
+| Data | Navigation | Datasource | Filter |
+| --- | --- | --- | --- |
+| Backend metrics | **Drilldown > Metrics** | **Prometheus** | `job = matriz-backend` |
+| Backend logs | **Drilldown > Logs** | **Loki** | `service_name = matriz-backend` |
+
+Choose a time range covering recent backend activity. Prometheus scrapes metrics every 15 seconds; logs may take a few seconds to appear after a backend request. Historical console logs are not backfilled.
+
 ## Application logging
+
+Logback writes to the console and to Loki using Spring Boot's OpenTelemetry SDK and OTLP HTTP exporter. The pinned OpenTelemetry Logback appender is installed with the Spring-managed SDK during startup. Only the `requestId` MDC attribute is captured. Export uses a bounded asynchronous queue (2048 records, batches up to 512, one-second interval) and a five-second HTTP timeout; telemetry delivery does not block request processing.
+
+Appender 2.28.0-alpha targets the Boot 4.1.2 SDK baseline, 1.62.0. Keep instrumentation and SDK versions compatible: appender 2.21.0-alpha brings incubator API 1.55.0-alpha, which causes a startup `NoSuchMethodError` with SDK 1.62.0. After changing the pin, rebuild the backend image. Check the resolved graph with `.\mvnw.cmd dependency:tree '-Dincludes=io.opentelemetry:*,io.opentelemetry.instrumentation:*'`; the incubator API should resolve to 1.62.0-alpha alongside SDK/API 1.62.0.
+
+Compose sets `MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT=http://loki:3100/otlp/v1/logs`. For an IDE process, the default is `http://localhost:3100/otlp/v1/logs`; override with `OTLP_LOGS_ENDPOINT`. Loki accepts structured metadata with the existing v13 schema. This exports backend logs, not other containers' console output. Logs produced before the appender is installed may be absent.
+
+Apply logging changes from the repository root with `docker compose --profile prod up -d --build backend loki grafana`. See [Viewing metrics and logs in Grafana](#viewing-metrics-and-logs-in-grafana) for navigation and filters. Run the focused delivery and boundary checks from this directory with `.\mvnw.cmd '-Dtest=OpenTelemetryLoggingTests,ModuleStructureTests' test`.
 
 Application logs default to INFO. Set `APP_LOG_LEVEL=DEBUG` in the backend process environment to enable API request summaries, login/logout outcomes, account-provisioning compensation and Keycloak call status/timing. Routine requests and expected client errors do not emit INFO/WARN entries. HTTP 5xx responses, unhandled request failures and failed provisioning compensation emit ERROR entries.
 

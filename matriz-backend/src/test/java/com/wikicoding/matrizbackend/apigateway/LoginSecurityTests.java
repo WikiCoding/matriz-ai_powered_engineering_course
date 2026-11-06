@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.wikicoding.matrizbackend.apigateway.configs.SecurityConfiguration;
 import com.wikicoding.matrizbackend.apigateway.controllers.AuthenticationController;
@@ -49,7 +50,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @WebAppConfiguration
-@SpringJUnitConfig(classes = {SecurityConfiguration.class, LoginSecurityTests.TestConfiguration.class})
+@SpringJUnitConfig(classes = {SecurityConfiguration.class, GlobalExceptionHandler.class,
+        LoginSecurityTests.TestConfiguration.class})
 @TestPropertySource(properties = {
         "cors.allowed-origin-patterns=https://app.example.com",
         "cors.allowed-methods=GET,POST",
@@ -80,9 +82,15 @@ class LoginSecurityTests {
         // Arrange: shared isolated test state.
         state.providerDown.set(false);
         state.backendDown.set(false);
+        state.duplicateEmail.set(false);
+        state.invalidCredentials.set(false);
         state.logoutCalls.set(0);
         state.createdUsers.set(0);
         state.deletedUsers.set(0);
+        state.tokenCalls.set(0);
+        state.loginForm.set(null);
+        state.createdUserBody.set(null);
+        org.mockito.Mockito.clearInvocations(context.getBean(UserAccounts.class));
         client = MockMvcWebTestClient.bindToApplicationContext(context)
                 .filter(context.getBean("springSecurityFilterChain", jakarta.servlet.Filter.class)).build();
     }
@@ -92,10 +100,12 @@ class LoginSecurityTests {
         // Arrange: fixtures and dependency state are reset in resetState().
         // Act / Assert: execute the workflow and verify responses/state.
         client.post().uri("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{\"username\":\"test\",\"password\":\"test\"}")
+                .bodyValue("{\"email\":\"test@example.com\",\"password\":\"test\"}")
                 .exchange().expectStatus().isOk()
                 .expectBody().jsonPath("$.access_token").isEqualTo("valid");
         protectedRequest("valid").expectStatus().isOk();
+        assertEquals("grant_type=password&client_id=matriz-client&username=test%40example.com&password=test",
+                state.loginForm.get());
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -124,10 +134,15 @@ class LoginSecurityTests {
         // Act / Assert: execute the workflow and verify responses/state.
         client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
+                .bodyValue("{\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
                 .exchange().expectStatus().isCreated().expectBody().jsonPath("$.email").isEqualTo("new.user@example.com");
         assertEquals(1, state.createdUsers.get());
         assertEquals(0, state.deletedUsers.get());
+        var identity = new tools.jackson.databind.ObjectMapper().readTree(state.createdUserBody.get());
+        assertEquals("new.user@example.com", identity.get("username").asText());
+        assertEquals("new.user@example.com", identity.get("email").asText());
+        org.mockito.Mockito.verify(context.getBean(UserAccounts.class)).createUser("new-user",
+                "new.user@example.com", java.util.UUID.fromString("4e39c0f2-90b0-44d5-bc8c-968d365d3375"));
     }
 
     @Test
@@ -156,7 +171,7 @@ class LoginSecurityTests {
     @Test
     void registrationRejectsMissingNamesBeforeCreatingIdentity() {
         // Arrange
-        String request = "{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\" \",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}";
+        String request = "{\"email\":\"new.user@example.com\",\"firstName\":\" \",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}";
         // Act
         client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
@@ -172,7 +187,7 @@ class LoginSecurityTests {
         // Act / Assert: execute the workflow and verify responses/state.
         client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{\"username\":\"new.user\",\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
+                .bodyValue("{\"email\":\"new.user@example.com\",\"firstName\":\"New\",\"lastName\":\"User\",\"password\":\"a-long-temporary-password\",\"role\":\"SOFTWARE_ENGINEER\",\"teamId\":\"4e39c0f2-90b0-44d5-bc8c-968d365d3375\"}")
                 .exchange().expectStatus().isEqualTo(502);
         assertEquals(1, state.deletedUsers.get());
     }
@@ -281,10 +296,73 @@ class LoginSecurityTests {
     @Test
     void invalidLoginInputIsRejected() {
         // Arrange
-        var input = Map.of("username", "", "password", "");
+        var input = Map.of("email", "", "password", "");
         // Act / Assert
         client.post().uri("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(input).exchange().expectStatus().isBadRequest();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "{}", "{\"email\":null}", "{\"email\":\"\"}", "{\"email\":\" \"}",
+            "{\"email\":\"test\"}", "{\"email\":\"test@\"}", "{\"email\":\"@example.com\"}",
+            "{\"username\":\"test@example.com\"}"
+    })
+    void loginRejectsMissingOrInvalidEmailBeforeCallingKeycloak(String identity) {
+        // Arrange
+        var input = new tools.jackson.databind.ObjectMapper().readTree(identity);
+        ((tools.jackson.databind.node.ObjectNode) input).put("password", "test-password");
+
+        // Act / Assert
+        client.post().uri("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(input.toString()).exchange().expectStatus().isBadRequest()
+                .expectBody().jsonPath("$.code").isEqualTo("BAD_REQUEST");
+        assertEquals(0, state.tokenCalls.get());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"", " ", "new.user", "new.user@", "@example.com"})
+    @org.junit.jupiter.params.provider.NullSource
+    void registrationRejectsInvalidEmailWithoutSideEffects(String email) {
+        // Arrange
+        var input = new java.util.HashMap<String, Object>(Map.of("firstName", "New", "lastName", "User",
+                "password", "test-password", "role", "SOFTWARE_ENGINEER",
+                "teamId", "4e39c0f2-90b0-44d5-bc8c-968d365d3375"));
+        if (email != null) input.put("email", email);
+
+        // Act / Assert
+        client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(input).exchange().expectStatus().isBadRequest();
+        assertEquals(0, state.tokenCalls.get());
+        assertEquals(0, state.createdUsers.get());
+        org.mockito.Mockito.verifyNoInteractions(context.getBean(UserAccounts.class));
+    }
+
+    @Test
+    void loginRejectsIncorrectCredentials() {
+        // Arrange
+        state.invalidCredentials.set(true);
+
+        // Act / Assert
+        client.post().uri("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("email", "test@example.com", "password", "wrong-password"))
+                .exchange().expectStatus().isUnauthorized();
+        assertEquals(1, state.tokenCalls.get());
+    }
+
+    @Test
+    void duplicateEmailDoesNotCreateALocalProfileOrDeleteAnExistingIdentity() {
+        // Arrange
+        state.duplicateEmail.set(true);
+        var input = Map.of("email", "NEW.USER@example.com", "firstName", "New", "lastName", "User",
+                "password", "test-password", "role", "SOFTWARE_ENGINEER",
+                "teamId", "4e39c0f2-90b0-44d5-bc8c-968d365d3375");
+
+        // Act / Assert
+        client.post().uri("/api/v1/users").headers(h -> h.setBearerAuth("admin"))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(input).exchange().expectStatus().isEqualTo(409);
+        assertEquals(0, state.deletedUsers.get());
+        org.mockito.Mockito.verifyNoInteractions(context.getBean(UserAccounts.class));
     }
 
     private WebTestClient.ResponseSpec protectedRequest(String token) {
@@ -313,9 +391,14 @@ class LoginSecurityTests {
     static class TestState {
         final AtomicBoolean providerDown = new AtomicBoolean();
         final AtomicBoolean backendDown = new AtomicBoolean();
+        final AtomicBoolean duplicateEmail = new AtomicBoolean();
+        final AtomicBoolean invalidCredentials = new AtomicBoolean();
         final AtomicInteger logoutCalls = new AtomicInteger();
         final AtomicInteger createdUsers = new AtomicInteger();
         final AtomicInteger deletedUsers = new AtomicInteger();
+        final AtomicInteger tokenCalls = new AtomicInteger();
+        final AtomicReference<String> loginForm = new AtomicReference<>();
+        final AtomicReference<String> createdUserBody = new AtomicReference<>();
     }
 
     @RestController
@@ -337,10 +420,33 @@ class LoginSecurityTests {
         }
         @Bean
         WebClient keycloakWebClient(TestState state) {
-            return WebClient.builder().exchangeFunction(request -> {
+            return WebClient.builder().filter((request, next) -> {
+                var output = new org.springframework.mock.http.client.reactive.MockClientHttpRequest(
+                        request.method(), request.url());
+                var bodyContext = new org.springframework.web.reactive.function.BodyInserter.Context() {
+                    public List<org.springframework.http.codec.HttpMessageWriter<?>> messageWriters() {
+                        return org.springframework.web.reactive.function.client.ExchangeStrategies.withDefaults().messageWriters();
+                    }
+                    public java.util.Optional<org.springframework.http.server.reactive.ServerHttpRequest> serverRequest() {
+                        return java.util.Optional.empty();
+                    }
+                    public Map<String, Object> hints() { return Map.of(); }
+                };
+                return request.body().insert(output, bodyContext).then(Mono.defer(output::getBodyAsString)).flatMap(body -> {
+                    if (request.url().getPath().endsWith("/token")) {
+                        state.tokenCalls.incrementAndGet();
+                        if (body.contains("grant_type=password")) state.loginForm.set(body);
+                    }
+                    if (request.url().getPath().endsWith("/users") && request.method().name().equals("POST")) {
+                        state.createdUserBody.set(body);
+                    }
+                    return next.exchange(request);
+                });
+            }).exchangeFunction(request -> {
                 if (request.url().getPath().contains("/admin/") && request.url().getPath().endsWith("/users")
                         && request.method().name().equals("POST")) {
                     state.createdUsers.incrementAndGet();
+                    if (state.duplicateEmail.get()) return Mono.just(ClientResponse.create(HttpStatus.CONFLICT).build());
                     return Mono.just(ClientResponse.create(HttpStatus.CREATED)
                             .header("Location", "https://identity.example/admin/realms/matriz/users/new-user").build());
                 }
@@ -360,6 +466,7 @@ class LoginSecurityTests {
                     return Mono.just(ClientResponse.create(state.providerDown.get()
                             ? HttpStatus.BAD_GATEWAY : HttpStatus.NO_CONTENT).build());
                 }
+                if (state.invalidCredentials.get()) return Mono.just(ClientResponse.create(HttpStatus.UNAUTHORIZED).build());
                 return Mono.just(ClientResponse.create(HttpStatus.OK).header("Content-Type", "application/json")
                         .body("{\"access_token\":\"valid\",\"token_type\":\"Bearer\"}").build());
             }).build();

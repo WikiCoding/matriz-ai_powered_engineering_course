@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Matriz API
-  version: 0.6.0
+  version: 0.7.0
   description: Approved API baseline revised for customer decisions. User/team updates and deletion were not requested and are excluded, including post-creation role and membership changes. Individual comment updates/deletion are excluded; project/task deletion cascades remain. Remaining details are in docs/constraints.md (D-17).
 servers:
   - url: https://api.matriz.example.com
@@ -11,12 +11,14 @@ paths:
   /api/v1/auth/login:
     post:
       tags: [Auth]
-      summary: Exchange user credentials for Keycloak tokens
+      summary: Exchange email and password for Keycloak tokens
+      description: Requires a nonblank, valid email address. The application maps email to Keycloak's username protocol parameter; the application no longer accepts username as the login identifier.
       operationId: login
       security: []
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest'}}}}
       responses:
         '200': {description: Keycloak access and refresh tokens, content: {application/json: {schema: {$ref: '#/components/schemas/KeycloakTokenResponse'}}}}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
   /api/v1/auth/logout:
     post:
@@ -57,7 +59,7 @@ paths:
       tags: [Users]
       summary: Administrator provisions a Keycloak identity and local user profile
       operationId: createUser
-      description: Requires the ADMINISTRATOR Keycloak realm role. The integrated backend edge creates an email-verified Keycloak identity with a directly usable password, assigns the requested realm role, then invokes the User module locally to create the linked profile and its exactly-one team membership. If local-profile creation fails, the edge deletes the new Keycloak identity and does not report success.
+      description: Requires the ADMINISTRATOR Keycloak realm role. Email is the only requested account identifier and must be valid and nonblank; the Keycloak username is set to that email. The integrated backend edge creates an email-verified Keycloak identity with a directly usable password, assigns the requested realm role, then invokes the User module locally to create the linked profile and its exactly-one team membership. If local-profile creation fails, the edge deletes the new Keycloak identity and does not report success.
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
       responses: {'201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '502': {description: Keycloak or backend provisioning dependency failed}, '503': {description: Keycloak provisioning client is not configured}}
   /api/v1/users/{userId}/team-memberships:
@@ -243,16 +245,15 @@ components:
       properties: {email: {type: string, format: email, description: Unique case-insensitively}, role: {$ref: '#/components/schemas/Role'}, teamId: {type: string, format: uuid}}
     RegisterRequest:
       type: object
-      required: [username, email, firstName, lastName, password, role, teamId]
+      required: [email, firstName, lastName, password, role, teamId]
       properties:
-        username: {type: string, minLength: 1}
-        email: {type: string, format: email, description: Unique case-insensitively}
+        email: {type: string, minLength: 1, format: email, description: Unique case-insensitively; also used as the Keycloak username}
         firstName: {type: string, minLength: 1, pattern: '\\S'}
         lastName: {type: string, minLength: 1, pattern: '\\S'}
         password: {type: string, format: password, minLength: 15, writeOnly: true, description: Delivered in person and usable for direct login}
         role: {$ref: '#/components/schemas/Role'}
         teamId: {type: string, format: uuid}
-    LoginRequest: {type: object, required: [username, password], properties: {username: {type: string, minLength: 1}, password: {type: string, format: password, writeOnly: true}}}
+    LoginRequest: {type: object, required: [email, password], properties: {email: {type: string, format: email, minLength: 1}, password: {type: string, minLength: 1, format: password, writeOnly: true}}}
     KeycloakTokenResponse: {type: object, required: [access_token, token_type, expires_in], properties: {access_token: {type: string}, refresh_token: {type: string}, token_type: {type: string}, expires_in: {type: integer, format: int64}, refresh_expires_in: {type: integer, format: int64}, scope: {type: string}}}
     TeamCreate: {type: object, required: [name], properties: {name: {type: string, minLength: 1, pattern: '\\S'}}}
     Team: {type: object, required: [id, name], properties: {id: {type: string, format: uuid}, name: {type: string, minLength: 1}}}

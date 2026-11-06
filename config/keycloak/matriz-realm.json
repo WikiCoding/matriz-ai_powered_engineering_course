@@ -4,6 +4,10 @@
   "displayName": "Matriz",
   "registrationAllowed": false,
   "resetPasswordAllowed": false,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
   "roles": {
     "realm": [
       { "name": "ADMINISTRATOR", "description": "Matriz administrator" },

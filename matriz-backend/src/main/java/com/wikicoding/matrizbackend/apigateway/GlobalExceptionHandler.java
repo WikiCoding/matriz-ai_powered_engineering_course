@@ -5,11 +5,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 /** Maps gateway controller failures to the existing API error envelope. */
 @RestControllerAdvice(basePackages = {"com.wikicoding.matrizbackend.apigateway.controllers",
         "com.wikicoding.matrizbackend.user.controllers"})
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception) {
+        return ResponseEntity.badRequest().body(new ErrorResponse("BAD_REQUEST",
+                "A valid email and all required fields must be provided"));
+    }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException exception) {

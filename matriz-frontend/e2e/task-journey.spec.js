@@ -3,12 +3,12 @@ const { randomUUID } = require('node:crypto');
 
 test('manager creates a task and sees it in the project', async ({ page, request }) => {
   // Arrange: provision a uniquely named disposable project in the isolated environment.
-  const { E2E_USERNAME: username, E2E_PASSWORD: password, E2E_TEAM_ID: teamId } = process.env;
-  if (!username || !password || !teamId) {
-    throw new Error('Set E2E_USERNAME, E2E_PASSWORD and E2E_TEAM_ID for an isolated test environment.');
+  const { E2E_EMAIL: email, E2E_PASSWORD: password, E2E_TEAM_ID: teamId } = process.env;
+  if (!email || !password || !teamId) {
+    throw new Error('Set E2E_EMAIL, E2E_PASSWORD and E2E_TEAM_ID for an isolated test environment.');
   }
   const api = (process.env.E2E_API_URL || 'http://localhost:8080').replace(/\/$/, '');
-  const login = await request.post(`${api}/api/v1/auth/login`, { data: { username, password } });
+  const login = await request.post(`${api}/api/v1/auth/login`, { data: { email, password } });
   expect(login.status()).toBe(200);
   const { access_token: token } = await login.json();
   const headers = { Authorization: `Bearer ${token}` };
@@ -22,7 +22,7 @@ test('manager creates a task and sees it in the project', async ({ page, request
   try {
     // Act: authenticate through the UI, open the project and create a task.
     await page.goto('/');
-    await page.getByLabel('Username').fill(username);
+    await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('link', { name: new RegExp(projectName) }).click();

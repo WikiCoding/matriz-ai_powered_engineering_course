@@ -27,7 +27,7 @@ User membership is assigned once during user creation under US-01.1. Moving user
 
 As a user, I want a complete authenticated session.
 
-1. A `POST /api/v1/auth/login` request to the integrated backend HTTP edge forwards the user's email/password credentials to Keycloak's token endpoint using the password grant.
+1. A `POST /api/v1/auth/login` request accepts `email` and `password`, validates a nonblank email address, and forwards it as Keycloak's protocol-required `username` in the password grant. Account creation accepts email without a separate username and sets the Keycloak username equal to email. Missing/invalid email is rejected before contacting Keycloak.
 2. Valid credentials return Keycloak access/refresh tokens; invalid credentials and unauthenticated API requests are rejected.
 3. After logout succeeds, subsequent API requests from that session are rejected immediately on every replica, including replay of its access token. Expired sessions lead to login with an understandable message.
 

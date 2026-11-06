@@ -101,6 +101,8 @@ Sources: [Spring Boot database initialization](https://docs.spring.io/spring-boo
 
 ## Delegated security baseline
 
+Email-only identity (customer revision 2026-11-06): application login and account-creation requests use `email`, with no independent username. The backend validates email and maps it to Keycloak's protocol-required `username` during token exchange; provisioning sets username equal to email. Realm import enables email-as-username/email login and disables duplicate emails and username editing. Existing realm/account alignment is an administrative operation preserving subjects, not an application schema migration. See the decision register and backend README.
+
 These are selected implementation settings under the user's approval of proposal 6, not pre-existing product requirements.
 
 - Keycloak: minimum password length 6 characters, allow passphrases, reject passwords equal to the username/email. New accounts have directly usable passwords and verified email. Enable temporary brute-force lockout after five consecutive failures, with a 15-minute lockout; verify the pinned Keycloak configuration produces this behavior.
@@ -120,6 +122,8 @@ User, Team and Project Management modules retain the ownership described above. 
 Provisioning reserves a unique identity/profile correlation, creates the Keycloak identity and finalizes the local profile/team link; partial states cannot log in to business operations. The integrated edge compensates a role/profile failure by deleting the just-created Keycloak identity and never reports success. Retry using the same correlation; reconcile incomplete records without reporting success or creating duplicate users. Failed provisioning compensation does not authorize deletion of successfully created accounts. User/team update and deletion workflows, including role-change reconciliation, are outside scope (D-17). Project-team changes and task moves clean up invalid assignments in the same transaction. Reject duplicate/second assignments with 409.
 
 ## Spring Boot 4 observability and Compose topology
+
+Implementation update (2026-11-06): Compose enables Prometheus, Loki and Grafana. The backend now configures the Spring Boot OpenTelemetry starter/exporter and a pinned Logback appender, installed against the managed SDK at startup. Console logging is retained. Logs use bounded asynchronous OTLP HTTP export to `http://loki:3100/otlp/v1/logs`, with structured metadata enabled in Loki. Only `requestId` is captured from MDC. A focused disposable HTTP-receiver test covers message, service-name and request-ID delivery; its execution and live Loki/Grafana verification remain blocked in the current environment by Maven/Docker access. Earlier statements below describing logging as unimplemented are historical.
 
 The single owned Java application (backend including its HTTP edge) includes `spring-boot-starter-actuator`, Micrometer and `io.micrometer:micrometer-registry-otlp`. Use the Spring Boot dependency-management baseline rather than independently selecting incompatible Micrometer versions.
 

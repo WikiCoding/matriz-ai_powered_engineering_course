@@ -1,3 +1,6 @@
 package com.wikicoding.matrizbackend.apigateway.dtos;
 
-public record LoginRequest(String username, String password) { }
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginRequest(@NotBlank @Email String email, @NotBlank String password) { }

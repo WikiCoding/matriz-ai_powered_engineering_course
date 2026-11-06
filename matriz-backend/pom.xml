@@ -29,10 +29,23 @@
     <properties>
         <java.version>21</java.version>
         <spring-modulith.version>2.1.1</spring-modulith.version>
-        <frontend.directory>${project.basedir}/../matriz-frontend</frontend.directory>
-        <npm.executable>npm</npm.executable>
+        <!-- Instrumentation 2.28.0 targets Boot 4.1's OpenTelemetry SDK 1.62.0. -->
+        <opentelemetry-logback-appender.version>2.28.0-alpha</opentelemetry-logback-appender.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <version>${opentelemetry-logback-appender.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -152,53 +165,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.6.4</version>
-                <configuration>
-                    <executable>${npm.executable}</executable>
-                    <workingDirectory>${frontend.directory}</workingDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>install-frontend</id>
-                        <phase>generate-resources</phase>
-                        <goals><goal>exec</goal></goals>
-                        <configuration>
-                            <arguments><argument>ci</argument></arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-frontend</id>
-                        <phase>generate-resources</phase>
-                        <goals><goal>exec</goal></goals>
-                        <configuration>
-                            <arguments><argument>run</argument><argument>build</argument></arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-frontend</id>
-                        <phase>process-resources</phase>
-                        <goals><goal>copy-resources</goal></goals>
-                        <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${frontend.directory}/build</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

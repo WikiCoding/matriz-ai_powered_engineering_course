@@ -1,21 +1,19 @@
 name: matriz
 
 services:
-#  web:
-#    profiles:
-#      - prod
-#    build:
-#      context: ./web
-#    depends_on:
-#      backend:
-#        condition: service_started
-#    ports:
-#      - "3000:3000"
-#    networks:
-#      - frontend
-#
+  frontend:
+    build:
+      context: .
+      dockerfile: matriz-frontend/Dockerfile
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    networks:
+      - frontend
+
   backend:
-    profiles: [prod]
     build:
       context: .
       dockerfile: matriz-backend/Dockerfile
@@ -27,10 +25,11 @@ services:
     environment:
       DB_URL: jdbc:postgresql://app-db:5432/${APP_DB_NAME:-matriz}
       APP_DB_USER: ${APP_DB_USER:-matriz}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-matriz-local-password}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-matriz}
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/matriz
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/matriz/protocol/openid-connect/certs
+      MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT: http://loki:3100/otlp/v1/logs
       KEYCLOAK_PROVISIONING_CLIENT_ID: ${KEYCLOAK_PROVISIONING_CLIENT_ID:-matriz-provisioning}
       KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${KEYCLOAK_PROVISIONING_CLIENT_SECRET:-matriz-local-provisioning-secret}
     ports:
@@ -43,7 +42,14 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.3.3
     command: start-dev --import-realm --http-port=8080
+    depends_on:
+      keycloak-db-init:
+        condition: service_completed_successfully
     environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://app-db:5432/${KEYCLOAK_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak-local-password}
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HEALTH_ENABLED: "true"
@@ -61,6 +67,25 @@ services:
     networks:
       - backend
       - identity
+
+  keycloak-db-init:
+    image: postgres:16.4
+    depends_on:
+      app-db:
+        condition: service_healthy
+    environment:
+      PGHOST: app-db
+      PGDATABASE: ${APP_DB_NAME:-matriz}
+      PGUSER: ${APP_DB_USER:-matriz}
+      PGPASSWORD: ${APP_DB_PASSWORD:-matriz}
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME:-keycloak}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak-local-password}
+    entrypoint: ["psql", "--no-psqlrc", "--set=ON_ERROR_STOP=1", "--file=/init/keycloak.sql"]
+    volumes:
+      - ./config/postgres/keycloak.sql:/init/keycloak.sql:ro
+    networks:
+      - backend
 
   app-db:
     image: postgres:16.4
@@ -80,47 +105,47 @@ services:
     networks:
       - backend
 
-#  prometheus:
-#    image: prom/prometheus:v3.5.0
-#    command:
-#      - --config.file=/etc/prometheus/prometheus.yml
-#      - --storage.tsdb.path=/prometheus
-#      - --web.enable-otlp-receiver
-#    volumes:
-#      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-#      - prometheus-data:/prometheus
-#    ports:
-#      - "9090:9090"
-#    networks:
-#      - observability
-#
-#  loki:
-#    image: grafana/loki:3.5.0
-#    command: -config.file=/etc/loki/config.yaml
-#    volumes:
-#      - ./config/loki/config.yaml:/etc/loki/config.yaml:ro
-#      - loki-data:/loki
-#    ports:
-#      - "3100:3100"
-#    networks:
-#      - observability
-#
-#  grafana:
-#    image: grafana/grafana:12.1.1
-#    depends_on:
-#      - prometheus
-#      - loki
-#    environment:
-#      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-#      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-local}
-#      GF_USERS_ALLOW_SIGN_UP: "false"
-#    volumes:
-#      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
-#      - grafana-data:/var/lib/grafana
-#    ports:
-#      - "3001:3000"
-#    networks:
-#      - observability
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-otlp-receiver
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:3.5.0
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./config/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    networks:
+      - observability
 
 volumes:
   app-db-data:
