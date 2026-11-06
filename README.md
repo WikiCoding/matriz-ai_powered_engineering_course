@@ -36,12 +36,12 @@ The frontend and backend are separate containers. Maven no longer bundles the Re
 
 ### Publishing application images
 
-After both CI jobs succeed on a push to `main`, `.github/workflows/ci.yml` builds and publishes separate `linux/amd64` images from the existing Dockerfiles:
+After both CI jobs succeed on a push to `main`, `.github/workflows/cicd.yml` ensures the required separate `linux/amd64` images are published from the existing Dockerfiles:
 
-- `ghcr.io/<owner>/<repository>-backend:<full-commit-sha>`
-- `ghcr.io/<owner>/<repository>-frontend:<full-commit-sha>`
+- `ghcr.io/<owner>/<repository>-backend:<component-commit-sha>`
+- `ghcr.io/<owner>/<repository>-frontend:<component-commit-sha>`
 
-Image names are lowercased. Publishing uses the workflow's `GITHUB_TOKEN` with `packages: write`; no additional registry secret is required. Pull requests run checks without publishing. Both images use the same commit tag; use a release only after the entire publish job matrix succeeds, since one image can publish while the other fails. Existing packages must grant this repository Actions access if not already linked. This workflow publishes images only; it does not deploy to EC2 or republish Keycloak/observability images.
+Image names are lowercased. Publishing uses the workflow's `GITHUB_TOKEN` with `packages: write`; no additional registry secret is required. Pull requests run checks without publishing. Each image uses the last commit affecting its component or shared build inputs; unchanged published images are reused. Deployment waits for the complete publish matrix. Existing packages must grant this repository Actions access if not already linked. After publishing succeeds, the workflow connects to EC2 as `ubuntu` and invokes the installed deployment script as root through non-interactive sudo. Configure the `ec2` environment and prepare the host as described in [continuous deployment](docs/deployment.md). Supporting Keycloak/observability images are not republished or redeployed.
 
 Docker Compose keeps the application services behind the `prod` profile. Supporting services can be started independently while developing infrastructure or application components.
 

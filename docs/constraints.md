@@ -25,7 +25,7 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 
 ## Remaining decision register
 
-The 2026-11-05 frontend-bundling decision is superseded by the customer's 2026-11-06 clarification: frontend and backend are separate images, and Maven no longer bundles React. The customer requested GHCR publication of both images through GitHub Actions. Publish on pushes to `main` only after backend and frontend CI succeed, using a shared full-commit-SHA tag. This change authorizes image publication configuration, not automatic EC2 deployment or changes to the current frontend runtime. API authorization remains unchanged.
+The 2026-11-05 frontend-bundling decision is superseded by the customer's 2026-11-06 clarification: frontend and backend are separate images, and Maven no longer bundles React. The customer requested GHCR publication of both images through GitHub Actions. Publish on pushes to `main` only after backend and frontend CI succeed, using per-component full-commit-SHA tags and reusing unchanged published images. The subsequent customer approval authorizes automatic EC2 deployment over SSH after both images publish successfully, invoking a host-installed script as root with non-interactive sudo, using a host-managed Compose file and secrets. See [continuous deployment](deployment.md). The frontend runtime is unchanged. API authorization remains unchanged.
 
 Registration requires nonblank first and last names (customer revision 2026-10-31). The backend supplies them to Keycloak so the verified account has a complete profile for direct login.
 

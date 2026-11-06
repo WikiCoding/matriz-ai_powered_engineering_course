@@ -36,4 +36,5 @@ function useData(path, token, version = 0) {
   }, [path, token, version]);
   return result;
 }
+
 export { useData };
