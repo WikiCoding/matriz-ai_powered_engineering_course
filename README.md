@@ -28,7 +28,16 @@ The backend has User, Team and Project Management modules plus HTTP edge infrast
 
 ## Running locally
 
-The backend Maven build also installs and builds `matriz-frontend` and includes it in the Spring Boot JAR. Install Node.js/npm alongside Java 21 before building. Use a clean Maven build for deployment to remove old frontend assets. The bundled UI is served at `http://localhost:8080`; see [frontend packaging](matriz-backend/README.md#bundled-frontend).
+The frontend and backend are separate containers. Maven no longer bundles the React UI in the Spring Boot JAR. The current frontend Dockerfile runs `npm start` on port 3000 and proxies API requests to the backend.
+
+### Publishing application images
+
+After both CI jobs succeed on a push to `main`, `.github/workflows/ci.yml` builds and publishes separate `linux/amd64` images from the existing Dockerfiles:
+
+- `ghcr.io/<owner>/<repository>-backend:<full-commit-sha>`
+- `ghcr.io/<owner>/<repository>-frontend:<full-commit-sha>`
+
+Image names are lowercased. Publishing uses the workflow's `GITHUB_TOKEN` with `packages: write`; no additional registry secret is required. Pull requests run checks without publishing. Both images use the same commit tag; use a release only after the entire publish job matrix succeeds, since one image can publish while the other fails. Existing packages must grant this repository Actions access if not already linked. This workflow publishes images only; it does not deploy to EC2 or republish Keycloak/observability images.
 
 Docker Compose keeps the application services behind the `prod` profile. Supporting services can be started independently while developing infrastructure or application components.
 
