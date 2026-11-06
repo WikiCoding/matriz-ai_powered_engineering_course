@@ -28,6 +28,10 @@ The backend has User, Team and Project Management modules plus HTTP edge infrast
 
 ## Running locally
 
+For the requested AWS host preparation, see the [EC2 CloudFormation template and
+instructions](infra/cloudformation/README.md). This provisions host software only;
+application deployment and production acceptance remain separate.
+
 The frontend and backend are separate containers. Maven no longer bundles the React UI in the Spring Boot JAR. The current frontend Dockerfile runs `npm start` on port 3000 and proxies API requests to the backend.
 
 ### Publishing application images

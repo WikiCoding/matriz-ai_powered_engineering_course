@@ -99,6 +99,19 @@ The customer requested anonymous access for all HTTP methods at `/actuator` and 
 
 The customer requested Keycloak persistence on the existing PostgreSQL service. Use a separate Keycloak database and role, consistent with the approved architecture. Keycloak owns its schema/migrations; application Flyway does not modify identity tables. Compose provisions missing identity storage before Keycloak startup, including on existing PostgreSQL volumes. Embedded Keycloak data migration is not automatic.
 
+## EC2 host template (2026-11-06)
+
+The customer approved preparing a CloudFormation YAML for an Ubuntu 26.04 LTS x86
+EC2 host using AMI `ami-0fc7005aa213e82fa`, `t3.small`, a default 8 GiB EBS root
+volume and key pair `Matriz_KP`, with Git, Docker, Docker Compose and Node.js
+installed. The stack creates and attaches `matriz-sg`, allowing TCP ports 22, 80,
+443, 3000, 3001, 5432 and 8080 from all IPv4 and IPv6 source addresses.
+See [host template and instructions](../infra/cloudformation/README.md). This
+authorizes template preparation, not executing a deployment. D-09 remains pending
+for broader production operation, backups and recovery; this host template does
+not establish production readiness. Public service access must be restricted for
+use beyond the temporary demo.
+
 ## Logging dependencies (2026-11-06)
 
 The customer approved adding the OpenTelemetry logging dependencies to implement the already selected direct Logback-to-Loki pipeline. Spring Boot manages the OpenTelemetry starter/SDK/exporter versions; the Logback appender is pinned explicitly to 2.28.0-alpha, whose instrumentation release targets SDK 1.62.0. This corrects the initial 2.21.0-alpha pin, which pulled incubator API 1.55.0-alpha and caused a startup NoSuchMethodError with SDK 1.62.0. No collector or trace store is introduced. Runtime delivery and dependency compatibility must be verified before claiming end-to-end completion.

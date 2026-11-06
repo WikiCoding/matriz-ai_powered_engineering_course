@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Matriz Ubuntu 26.04 LTS x86 host with Git, Docker, Compose and Node.js.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC in which to create matriz-sg.
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public subnet in the selected VPC, with an internet gateway route.
+  RootVolumeSize:
+    Type: Number
+    Default: 8
+    MinValue: 8
+    Description: Root EBS volume size in GiB; must be at least the AMI snapshot size.
+
+Resources:
+  MatrizSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: matriz-sg
+      GroupDescription: Public access to the Matriz host and application services.
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - Description: SSH from IPv4
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - Description: SSH from IPv6
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIpv6: ::/0
+        - Description: HTTP from IPv4
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - Description: HTTP from IPv6
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIpv6: ::/0
+        - Description: HTTPS from IPv4
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Description: HTTPS from IPv6
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIpv6: ::/0
+        - Description: PostgreSQL from IPv4
+          IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+        - Description: PostgreSQL from IPv6
+          IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIpv6: ::/0
+        - Description: Keycloak admin from IPv4
+          IpProtocol: tcp
+          FromPort: 8180
+          ToPort: 8180
+          CidrIp: 0.0.0.0/0
+        - Description: Keycloak admin from IPv6
+          IpProtocol: tcp
+          FromPort: 8180
+          ToPort: 8180
+          CidrIpv6: ::/0
+        - Description: Backend from IPv4
+          IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - Description: Backend from IPv6
+          IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIpv6: ::/0
+        - Description: Frontend from IPv4
+          IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+        - Description: Frontend from IPv6
+          IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIpv6: ::/0
+      Tags:
+        - Key: Name
+          Value: matriz-sg
+
+  MatrizInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      # AMI IDs, key pairs and security groups are regional. Use eu-west-1.
+      ImageId: ami-0fc7005aa213e82fa
+      InstanceType: t3.small
+      KeyName: Matriz_KP
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          SubnetId: !Ref SubnetId
+          GroupSet:
+            - !GetAtt MatrizSecurityGroup.GroupId
+      BlockDeviceMappings:
+        # Ubuntu EC2 root mapping; Nitro exposes the device as NVMe inside Linux.
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RootVolumeSize
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: matriz
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -euo pipefail
+          exec > >(tee -a /var/log/matriz-provisioning.log) 2>&1
+          export DEBIAN_FRONTEND=noninteractive
+
+          # Use Ubuntu's signed repositories and native x86 packages.
+          apt-get -o Acquire::Retries=5 update
+          apt-get -o Acquire::Retries=5 install -y software-properties-common
+          add-apt-repository -y universe
+          apt-get -o Acquire::Retries=5 update
+          apt-get -o Acquire::Retries=5 install -y \
+            git docker.io docker-compose-v2 nodejs npm
+
+          systemctl enable --now docker
+          git --version
+          docker --version
+          docker compose version
+          docker info
+          node --version
+          npm --version
+          touch /var/lib/cloud/instance/matriz-provisioning-complete
+
+Outputs:
+  InstanceId:
+    Description: EC2 instance ID.
+    Value: !Ref MatrizInstance
+  PublicIp:
+    Description: Public IPv4 address; may change after stop/start or replacement.
+    Value: !GetAtt MatrizInstance.PublicIp
+  SecurityGroupId:
+    Description: ID of the created matriz-sg security group.
+    Value: !GetAtt MatrizSecurityGroup.GroupId
+  SshCommand:
+    Description: Run with your private key file and SSH permitted by matriz-sg.
+    Value: !Sub 'ssh -i "Matriz_KP.pem" ubuntu@${MatrizInstance.PublicIp}'
