@@ -17,8 +17,9 @@ downloads. The AMI and key pair must exist in that region/account; the supplied
 AMI must be Ubuntu 26.04 LTS, x86_64, with root device `/dev/sda1`. These
 account-specific properties have not been verified against AWS.
 
-The created security group permits TCP ports 22, 80, 443, 3000, 3001, 5432 and
-8080 from all IPv4 (`0.0.0.0/0`) and IPv6 (`::/0`) sources. An IPv6 ingress rule
+The created security group permits TCP ports 22, 80, 443, 3000, 5432 and 8080
+from all IPv4 (`0.0.0.0/0`) and IPv6 (`::/0`) sources. Grafana's port 3001 is
+permitted only from resources attached to `matriz-sg`. An IPv6 ingress rule
 does not assign an IPv6 address to the instance; the selected VPC/subnet and EC2
 network interface would also need IPv6 configuration for direct IPv6 reachability.
 Public SSH, PostgreSQL, Grafana and backend access should be narrowed to trusted
@@ -45,6 +46,13 @@ First boot also creates `/root/deploy_ec2.sh` with root-only executable permissi
 `docker-compose.yml` and `.env` beside it in `/root`, and set the GitHub `ec2`
 environment variable `EC2_DEPLOY_SCRIPT` to `/root/deploy_ec2.sh` (the workflow
 default uses the hyphenated filename). See [continuous deployment](../../docs/deployment.md).
+
+First boot also creates `/root/config` with the Loki configuration at
+`loki/config.yaml`, Grafana datasource provisioning at
+`grafana/provisioning/datasources/datasources.yaml`, and Prometheus configuration
+at `prometheus/prometheus.yml`. These files match the repository's current
+`config/` observability configurations and can be mounted by the root
+`docker-compose.yml`.
 
 Stack creation confirms EC2 creation, **not completion of software installation**:
 there is no CloudFormation resource signal. Connect using the `SshCommand` stack

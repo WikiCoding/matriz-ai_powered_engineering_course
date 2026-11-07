@@ -143,50 +143,50 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
-
-  deploy:
-    name: Deploy to EC2
-    needs: [publish, revisions]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    environment: ec2
-    concurrency:
-      group: matriz-ec2-deploy
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure SSH and deploy application images
-        shell: bash
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.EC2_SSH_KNOWN_HOSTS }}
-          EC2_HOST: ${{ vars.EC2_HOST }}
-          EC2_USER: ${{ vars.EC2_USER || 'ubuntu' }}
-          EC2_PORT: ${{ vars.EC2_PORT || '22' }}
-          DEPLOY_SCRIPT: ${{ vars.EC2_DEPLOY_SCRIPT || '/root/deploy-ec2.sh' }}
-          BACKEND_REVISION: ${{ needs.revisions.outputs.backend }}
-          FRONTEND_REVISION: ${{ needs.revisions.outputs.frontend }}
-          REPOSITORY: ${{ github.repository }}
-          RELEASE: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" && -n "$EC2_HOST" ]] || { echo "Missing EC2 SSH configuration" >&2; exit 2; }
-          [[ "$EC2_HOST" =~ ^[a-zA-Z0-9.-]+$ && "$EC2_USER" =~ ^[a-zA-Z0-9_-]+$ && "$EC2_PORT" =~ ^[0-9]+$ ]] || exit 2
-          latest=$(git ls-remote origin refs/heads/main | cut -f1)
-          if [[ "$latest" != "$RELEASE" ]]; then
-            echo "Skipping superseded commit $RELEASE"
-            exit 0
-          fi
-          umask 077
-          mkdir -p "$HOME/.ssh"
-          trap 'rm -f "$HOME/.ssh/matriz_key" "$HOME/.ssh/matriz_known_hosts"' EXIT
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/matriz_key"
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/matriz_known_hosts"
-          printf -v remote_command 'sudo -n -i -- bash %q %q %q %q' "$DEPLOY_SCRIPT" "$REPOSITORY" "$BACKEND_REVISION" "$FRONTEND_REVISION"
-          ssh -i "$HOME/.ssh/matriz_key" -p "$EC2_PORT" \
-            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/matriz_known_hosts" \
-            -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
-            "$EC2_USER@$EC2_HOST" "$remote_command"
+#
+#  deploy:
+#    name: Deploy to EC2
+#    needs: [publish, revisions]
+#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 25
+#    environment: ec2
+#    concurrency:
+#      group: matriz-ec2-deploy
+#      cancel-in-progress: false
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Configure SSH and deploy application images
+#        shell: bash
+#        env:
+#          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+#          SSH_KNOWN_HOSTS: ${{ secrets.EC2_SSH_KNOWN_HOSTS }}
+#          EC2_HOST: ${{ vars.EC2_HOST }}
+#          EC2_USER: ${{ vars.EC2_USER || 'ubuntu' }}
+#          EC2_PORT: ${{ vars.EC2_PORT || '22' }}
+#          DEPLOY_SCRIPT: ${{ vars.EC2_DEPLOY_SCRIPT || '/root/deploy-ec2.sh' }}
+#          BACKEND_REVISION: ${{ needs.revisions.outputs.backend }}
+#          FRONTEND_REVISION: ${{ needs.revisions.outputs.frontend }}
+#          REPOSITORY: ${{ github.repository }}
+#          RELEASE: ${{ github.sha }}
+#        run: |
+#          set -euo pipefail
+#          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" && -n "$EC2_HOST" ]] || { echo "Missing EC2 SSH configuration" >&2; exit 2; }
+#          [[ "$EC2_HOST" =~ ^[a-zA-Z0-9.-]+$ && "$EC2_USER" =~ ^[a-zA-Z0-9_-]+$ && "$EC2_PORT" =~ ^[0-9]+$ ]] || exit 2
+#          latest=$(git ls-remote origin refs/heads/main | cut -f1)
+#          if [[ "$latest" != "$RELEASE" ]]; then
+#            echo "Skipping superseded commit $RELEASE"
+#            exit 0
+#          fi
+#          umask 077
+#          mkdir -p "$HOME/.ssh"
+#          trap 'rm -f "$HOME/.ssh/matriz_key" "$HOME/.ssh/matriz_known_hosts"' EXIT
+#          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/matriz_key"
+#          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/matriz_known_hosts"
+#          printf -v remote_command 'sudo -n -i -- bash %q %q %q %q' "$DEPLOY_SCRIPT" "$REPOSITORY" "$BACKEND_REVISION" "$FRONTEND_REVISION"
+#          ssh -i "$HOME/.ssh/matriz_key" -p "$EC2_PORT" \
+#            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+#            -o UserKnownHostsFile="$HOME/.ssh/matriz_known_hosts" \
+#            -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+#            "$EC2_USER@$EC2_HOST" "$remote_command"

@@ -104,8 +104,9 @@ The customer requested Keycloak persistence on the existing PostgreSQL service. 
 The customer approved preparing a CloudFormation YAML for an Ubuntu 26.04 LTS x86
 EC2 host using AMI `ami-0fc7005aa213e82fa`, `t3.small`, a default 8 GiB EBS root
 volume and key pair `Matriz_KP`, with Git, Docker, Docker Compose and Node.js
-installed. The stack creates and attaches `matriz-sg`, allowing TCP ports 22, 80,
-443, 3000, 3001, 5432 and 8080 from all IPv4 and IPv6 source addresses.
+  installed. The stack creates and attaches `matriz-sg`, allowing TCP ports 22, 80,
+  443, 3000, 5432 and 8080 from all IPv4 and IPv6 source addresses, and Grafana
+  port 3001 only from resources attached to `matriz-sg`.
 See [host template and instructions](../infra/cloudformation/README.md). This
 authorizes template preparation, not executing a deployment. D-09 remains pending
 for broader production operation, backups and recovery; this host template does
