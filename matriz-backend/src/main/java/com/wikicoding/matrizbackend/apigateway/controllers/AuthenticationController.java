@@ -34,16 +34,19 @@ public class AuthenticationController {
     private final String realm;
     private final String clientId;
     private final ReactiveJwtDecoder jwtDecoder;
+    private final int TIMEOUT_SECONDS;
 
     public AuthenticationController(
             @Qualifier("keycloakWebClient") WebClient keycloakWebClient,
             @Value("${keycloak.realm:matriz}") String realm,
             @Value("${keycloak.client-id:matriz-client}") String clientId,
+            @Value("${http.timeout.seconds:15}") int timeoutSeconds,
             ReactiveJwtDecoder jwtDecoder) {
         this.keycloakWebClient = keycloakWebClient;
         this.realm = realm;
         this.clientId = clientId;
         this.jwtDecoder = jwtDecoder;
+        this.TIMEOUT_SECONDS = timeoutSeconds;
     }
 
     @PostMapping(value = "login", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -61,7 +64,7 @@ public class AuthenticationController {
                 .body(BodyInserters.fromFormData(form))
                 .retrieve()
                 .bodyToMono(KeycloakTokenResponse.class)
-                .timeout(Duration.ofSeconds(5))
+                .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                 .onErrorMap(WebClientResponseException.class, failure -> new ResponseStatusException(
                         failure.getStatusCode().is4xxClientError() ? HttpStatus.UNAUTHORIZED : HttpStatus.BAD_GATEWAY,
                         "Identity provider rejected login"))
@@ -100,7 +103,7 @@ public class AuthenticationController {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(form))
                 .retrieve().toBodilessEntity().then()
-                .timeout(Duration.ofSeconds(5))
+                .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                 .doOnSuccess(ignored -> log.debug("Logout completed"))
                 .doOnError(failure -> log.debug("Logout failed exception={}", failure.getClass().getSimpleName()))
                 .onErrorMap(failure -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,

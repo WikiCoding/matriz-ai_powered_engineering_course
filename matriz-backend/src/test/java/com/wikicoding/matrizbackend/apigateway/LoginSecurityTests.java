@@ -482,7 +482,7 @@ class LoginSecurityTests {
         }
         @Bean
         AuthenticationController authenticationController(WebClient keycloakWebClient, ReactiveJwtDecoder decoder) {
-            return new AuthenticationController(keycloakWebClient, "matriz", "matriz-client", decoder);
+            return new AuthenticationController(keycloakWebClient, "matriz", "matriz-client", 5, decoder);
         }
         @Bean
         UserDisplayService userDisplayService() { return mock(UserDisplayService.class); }
