@@ -40,6 +40,12 @@ Universe if needed. Versions follow Ubuntu's repository updates; no particular
 Node.js major version is pinned. Docker is enabled at boot. Run Docker commands
 with `sudo`; provisioning does not grant the login user Docker group privileges.
 
+First boot also creates `/root/deploy_ec2.sh` with root-only executable permissions
+(`0700`). This is `~/deploy_ec2.sh` after `sudo -i`. Place your configured
+`docker-compose.yml` and `.env` beside it in `/root`, and set the GitHub `ec2`
+environment variable `EC2_DEPLOY_SCRIPT` to `/root/deploy_ec2.sh` (the workflow
+default uses the hyphenated filename). See [continuous deployment](../../docs/deployment.md).
+
 Stack creation confirms EC2 creation, **not completion of software installation**:
 there is no CloudFormation resource signal. Connect using the `SshCommand` stack
 output, then verify:
