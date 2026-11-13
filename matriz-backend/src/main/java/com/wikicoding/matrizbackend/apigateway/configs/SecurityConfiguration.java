@@ -42,7 +42,7 @@ public class SecurityConfiguration {
         cors.setAllowedOriginPatterns(csv(origins));
         cors.setAllowedMethods(csv(methods));
         cors.setAllowedHeaders(csv(headers));
-        cors.setExposedHeaders(List.of("Location"));
+        cors.setExposedHeaders(List.of("Location", "Retry-After"));
         cors.setAllowCredentials(false);
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cors);

@@ -6,6 +6,7 @@ module.exports = function setupProxy(app) {
     createProxyMiddleware({
       target: process.env.FRONTEND_DEV_PROXY_TARGET || "http://localhost:8080",
       changeOrigin: true,
+      xfwd: true,
     }),
   );
 };

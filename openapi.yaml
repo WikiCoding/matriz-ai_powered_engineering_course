@@ -17,6 +17,7 @@ paths:
       security: []
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest'}}}}
       responses:
+        '429': {$ref: '#/components/responses/TooManyRequests'}
         '200': {description: Keycloak access and refresh tokens, content: {application/json: {schema: {$ref: '#/components/schemas/KeycloakTokenResponse'}}}}
         '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
@@ -35,40 +36,40 @@ paths:
               required: [refresh_token]
               properties:
                 refresh_token: {type: string, minLength: 1, writeOnly: true}
-      responses: {'204': {description: Keycloak logout completed}, '400': {description: Missing or blank refresh token}, '503': {description: Keycloak logout incomplete; retry logout.}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Keycloak logout completed}, '400': {description: Missing or blank refresh token}, '503': {description: Keycloak logout incomplete; retry logout.}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/dashboard:
     get:
       tags: [Dashboard]
       summary: Accessible projects and task counts by status
       operationId: getDashboard
-      responses: {'200': {$ref: '#/components/responses/Dashboard'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Dashboard'}, '401': {$ref: '#/components/responses/Unauthorized'}}
   /api/v1/users/me:
     get:
       tags: [Users]
       summary: Read the authenticated user's profile for the panel
       operationId: getMyProfile
-      responses: {'200': {description: Current profile, content: {application/json: {schema: {$ref: '#/components/schemas/MyProfile'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {description: Current profile, content: {application/json: {schema: {$ref: '#/components/schemas/MyProfile'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/users:
     get:
       tags: [Users]
       summary: List users
       operationId: listUsers
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
-      responses: {'200': {$ref: '#/components/responses/UserList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/UserList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     post:
       tags: [Users]
       summary: Administrator provisions a Keycloak identity and local user profile
       operationId: createUser
       description: Requires the ADMINISTRATOR Keycloak realm role. Email is the only requested account identifier and must be valid and nonblank; the Keycloak username is set to that email. The integrated backend edge creates an email-verified Keycloak identity with a directly usable password, assigns the requested realm role, then invokes the User module locally to create the linked profile and its exactly-one team membership. If local-profile creation fails, the edge deletes the new Keycloak identity and does not report success.
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
-      responses: {'201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '502': {description: Keycloak or backend provisioning dependency failed}, '503': {description: Keycloak provisioning client is not configured}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/User'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '502': {description: Keycloak or backend provisioning dependency failed}, '503': {description: Keycloak provisioning client is not configured}}
   /api/v1/users/{userId}/team-memberships:
     parameters: [{ $ref: '#/components/parameters/UserId' }]
     get:
       tags: [Users]
       summary: List team memberships
       operationId: listUserTeamMemberships
-      responses: {'200': {description: Single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembership'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {description: Single team membership, content: {application/json: {schema: {$ref: '#/components/schemas/TeamMembership'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/users/{userId}/display:
     parameters: [{ $ref: '#/components/parameters/UserId' }]
     get:
@@ -76,58 +77,58 @@ paths:
       summary: Read a user's display name for owner, assignee, or comment attribution
       operationId: getUserDisplay
       description: Project Managers and Software Engineers may read active users; this does not grant user administration.
-      responses: {'200': {description: User display, content: {application/json: {schema: {$ref: '#/components/schemas/UserDisplay'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Identity provider unavailable}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {description: User display, content: {application/json: {schema: {$ref: '#/components/schemas/UserDisplay'}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Identity provider unavailable}}
   /api/v1/teams:
     post:
       tags: [Teams]
       summary: Administrator creates a team
       operationId: createTeam
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TeamCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Team'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Team'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     get:
       tags: [Teams]
       summary: List accessible teams
       operationId: listTeams
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
-      responses: {'200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TeamList'}, '401': {$ref: '#/components/responses/Unauthorized'}}
   /api/v1/teams/{teamId}:
     parameters: [{name: teamId, in: path, required: true, schema: {type: string, format: uuid}}]
     get:
       tags: [Teams]
       summary: Read a team name for project and task display
       operationId: getTeam
-      responses: {'200': {$ref: '#/components/responses/Team'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Team'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/projects:
     get:
       tags: [Projects]
       summary: List accessible projects alphabetically by name
       operationId: listProjects
       parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
-      responses: {'200': {$ref: '#/components/responses/ProjectList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/ProjectList'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
     post:
       tags: [Projects]
       summary: Create project owned by authenticated user
       operationId: createProject
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProjectCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}}
   /api/v1/projects/{projectId}:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
       tags: [Projects]
       summary: Get an accessible project
       operationId: getProject
-      responses: {'200': {$ref: '#/components/responses/Project'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Project'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     put:
       tags: [Projects]
       summary: Replace an accessible project's editable fields
       operationId: updateProject
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProjectUpdate'}}}}
-      responses: {'200': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Project'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     delete:
       tags: [Projects]
       summary: Delete an accessible project
       operationId: deleteProject
-      responses: {'204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/projects/{projectId}/assignee-options:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
@@ -135,7 +136,7 @@ paths:
       summary: List eligible Software Engineers in the project's team
       operationId: listAssigneeOptions
       description: Project Manager assignment selector; results are display choices, not assignments. The assignment POST still validates eligibility.
-      responses: {'200': {description: Eligible users ordered by display name and ID, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/AssigneeOption'}}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Identity provider unavailable}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {description: Eligible users ordered by display name and ID, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/AssigneeOption'}}}}}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {description: Identity provider unavailable}}
   /api/v1/projects/{projectId}/tasks:
     parameters: [{ $ref: '#/components/parameters/ProjectId' }]
     get:
@@ -143,74 +144,74 @@ paths:
       summary: List project tasks with status and priority filters
       operationId: listProjectTasks
       parameters: [{ $ref: '#/components/parameters/StatusFilter' }, { $ref: '#/components/parameters/PriorityFilter' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Size' }]
-      responses: {'200': {$ref: '#/components/responses/TaskList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/TaskList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/tasks:
     post:
       tags: [Tasks]
       summary: Create task in an accessible project
       operationId: createTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/tasks/{taskId}:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Tasks]
       summary: Get an accessible task
       operationId: getTask
-      responses: {'200': {$ref: '#/components/responses/Task'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Task'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     patch:
       tags: [Tasks]
       summary: Update an accessible task
       description: Omitted or null fields retain their current values. Sending an empty object makes no field changes but refreshes the last-edited timestamp.
       operationId: updateTask
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TaskUpdate'}}}}
-      responses: {'200': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Task'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     delete:
       tags: [Tasks]
       summary: Delete an accessible task
       operationId: deleteTask
-      responses: {'204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Physically deleted with dependent tasks (for projects), comments and assignments; users and teams retained}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/tasks/{taskId}/assignments:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Assignments]
       summary: List task assignees
       operationId: listTaskAssignments
-      responses: {'200': {$ref: '#/components/responses/AssignmentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/AssignmentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
     post:
       tags: [Assignments]
       summary: Project Manager assigns one Software Engineer from the project team to an unassigned task
       operationId: addTaskAssignment
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AssignmentCreate'}}}}
-      responses: {'409': {$ref: '#/components/responses/Conflict'}, '201': {$ref: '#/components/responses/Assignment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '409': {$ref: '#/components/responses/Conflict'}, '201': {$ref: '#/components/responses/Assignment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/tasks/{taskId}/assignments/{userId}:
     parameters: [{ $ref: '#/components/parameters/TaskId' }, { $ref: '#/components/parameters/UserId' }]
     delete:
       tags: [Assignments]
       summary: Project Manager removes the task assignment
       operationId: removeTaskAssignment
-      responses: {'204': {description: Assignment removed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '204': {description: Assignment removed}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/tasks/{taskId}/comments:
     parameters: [{ $ref: '#/components/parameters/TaskId' }]
     get:
       tags: [Comments]
       summary: Project Managers and Software Engineers read task comments
       operationId: listTaskComments
-      responses: {'200': {$ref: '#/components/responses/CommentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/CommentList'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/comments:
     post:
       tags: [Comments]
       summary: Software Engineer adds comment as authenticated author
       operationId: createComment
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CommentCreate'}}}}
-      responses: {'201': {$ref: '#/components/responses/Comment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '201': {$ref: '#/components/responses/Comment'}, '400': {$ref: '#/components/responses/ValidationError'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
   /api/v1/comments/{commentId}:
     get:
       tags: [Comments]
       summary: Get a comment
       operationId: getComment
       parameters: [{name: commentId, in: path, required: true, schema: {type: string, format: uuid}}]
-      responses: {'200': {$ref: '#/components/responses/Comment'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+      responses: {'429': {$ref: '#/components/responses/TooManyRequests'}, '200': {$ref: '#/components/responses/Comment'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
 components:
   securitySchemes:
     keycloakOAuth:
@@ -281,6 +282,11 @@ components:
     Dashboard: {type: object, required: [projects, taskCounts], properties: {projects: {type: array, items: {$ref: '#/components/schemas/Project'}}, taskCounts: {type: object, properties: {TODO: {type: integer, minimum: 0}, IN_PROGRESS: {type: integer, minimum: 0}, DONE: {type: integer, minimum: 0}}}}}
     Error: {type: object, required: [code, message], properties: {code: {type: string}, message: {type: string}}}
   responses:
+    TooManyRequests:
+      description: Five requests per rolling second per IP across all backend routes, or in-memory IP capacity exhausted. State is local to one process and resets on restart.
+      headers:
+        Retry-After: {description: Seconds to wait before retrying, schema: {type: integer, example: 1}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
     Team: {description: Team, content: {application/json: {schema: {$ref: '#/components/schemas/Team'}}}}
     Conflict: {description: Duplicate email or assignment, or second assignee, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     User: {description: User, content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
@@ -312,7 +318,7 @@ components:
     Forbidden: {description: Authenticated user lacks permission}
     NotFound: {description: Resource not found}
 security: [{keycloakOAuth: [openid, profile, email]}]
-x-rate-limiting: {required: false}
+x-rate-limiting: {required: true, requests: 5, windowSeconds: 1, algorithm: sliding-window, key: client-ip, storage: in-memory, scope: backend-process}
 x-keycloak: {realm: matriz, clientId: matriz-client, issuer: "https://{keycloak-host}/realms/matriz"}
 
 x-session: {absoluteMaximumHours: 8, reauthenticationRequired: true, passwordDelivery: in-person, firstLoginPasswordChange: not-required, idleTimeoutMinutes: 30, accessTokenMinutes: 5, logoutInvalidation: access-token-expiry}

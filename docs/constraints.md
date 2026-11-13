@@ -117,3 +117,16 @@ use beyond the temporary demo.
 ## Logging dependencies (2026-11-06)
 
 The customer approved adding the OpenTelemetry logging dependencies to implement the already selected direct Logback-to-Loki pipeline. Spring Boot manages the OpenTelemetry starter/SDK/exporter versions; the Logback appender is pinned explicitly to 2.28.0-alpha, whose instrumentation release targets SDK 1.62.0. This corrects the initial 2.21.0-alpha pin, which pulled incubator API 1.55.0-alpha and caused a startup NoSuchMethodError with SDK 1.62.0. No collector or trace store is introduced. Runtime delivery and dependency compatibility must be verified before claiming end-to-end completion.
+
+
+## In-memory IP rate limiting (2026-11-13)
+
+The customer reinstated backend IP rate limiting, superseding the limiter removal in D-16 and the older Redis/token-bucket policy. Every incoming backend HTTP request shares a maximum of five admissions per rolling one-second window per client IP, including authentication, Actuator, OPTIONS and unmapped routes. Rejected requests return HTTP 429 with the existing code/message JSON envelope and `Retry-After: 1`; they do not extend the window. Async/error redispatches are not counted again. Authentication failures consume an admission.
+
+State is in memory in each backend process and resets on restart; it is not shared across replicas. Shared NAT addresses share a quota. No Redis or additional dependency is required. Direct frontend and Keycloak endpoints are outside the backend filter's scope.
+
+`RATE_LIMIT_TRUSTED_PROXIES` defaults to empty and accepts comma-separated exact IP literals. Forwarded headers from other socket peers are ignored. For trusted peers, walk X-Forwarded-For from right to left to the first untrusted address; malformed chains fall back to the peer. Keep server forwarding disabled. The frontend proxy appends forwarding information; configure its actual backend-facing IP as trusted to preserve distinct client quotas. Do not trust arbitrary client networks.
+
+`RATE_LIMIT_MAX_IPS` defaults to 10000. Cleanup occurs lazily on traffic, at most once per second. Capacity exhaustion rejects new addresses with 429 rather than evicting active quotas. Existing addresses continue under their quotas. Storage remains bounded during idle periods.
+
+The API contract is `openapi.yaml`. Focused limiter/filter tests were added, but tests and application startup were deliberately not run at the customer's request. Full runtime validation remains pending.
