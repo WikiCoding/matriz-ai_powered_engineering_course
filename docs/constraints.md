@@ -6,6 +6,7 @@ Customer decisions on 2026-10-29 supersede conflicting earlier drafts.
 
 - English application/documentation; approximately 500 users.
 - Java 21, Spring Boot/Spring Modulith modular monolith and Clean Architecture; integrated HTTP edge in the same Spring MVC backend process (customer simplification on 2026-10-30).
+- Backend deployment constraint (2026-11-13): all backend application services and modules must be deployed together as one deployment unit, including the integrated HTTP edge, User, Team and Project Management. Independent deployment of backend application services or modules is not permitted. This is a financial decision, not a technical decision. This makes the D-15 single-process deployment requirement explicit; supporting infrastructure retains its separate service lifecycle.
 - Keycloak owns credentials and roles; PostgreSQL owns application data.
 - Docker Compose runs the full local environment, including Redis, Grafana, Loki and the selected Prometheus metrics store.
 - React, React Router, local state and optional useContext; no Flux, useReducer or Redux Toolkit. Custom CSS remains selected; Tailwind CSS and shadcn/ui are permitted alternatives. shadcn/ui may use Tailwind styling; permission to use it does not prohibit that dependency.

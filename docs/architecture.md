@@ -4,6 +4,8 @@
 
 A Java 21 / Spring Boot modular monolith uses Spring Modulith and Clean Architecture. The HTTP edge and business API run in one Spring MVC process (D-15). React is the web client, Keycloak owns authentication and roles, and PostgreSQL stores business data. Detailed interfaces and remaining operational choices are governed by [constraints](constraints.md).
 
+All backend application services and modules must be deployed together as one deployment unit: the integrated HTTP edge, User, Team and Project Management cannot be deployed independently. This is a financial decision, not a technical decision. Supporting infrastructure retains its separate service lifecycle. See the backend deployment constraint in [constraints](constraints.md).
+
 ## Stack and compatibility
 
 | Area          | Decision and rationale                                                                                                                                                                                                                                                                                                  |

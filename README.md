@@ -16,6 +16,8 @@ Testing choices: Mockito for backend units; Spring Boot with Testcontainers for 
 
 The backend has User, Team and Project Management modules plus HTTP edge infrastructure in one deployable process. Project Management groups projects, tasks, assignments and comments with distinct internal responsibilities, reflecting their shared lifecycle and business rules.
 
+All backend application services and modules must be deployed together as one deployment unit; independent backend service or module deployment is not permitted. This is a financial decision, not a technical decision. See the confirmed backend deployment constraint in [constraints](docs/constraints.md).
+
 ## Documentation
 
 - [Requirements](docs/requirements.md) — revised product scope and rules.
