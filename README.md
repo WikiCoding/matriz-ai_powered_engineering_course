@@ -45,36 +45,12 @@ After both CI jobs succeed on a push to `main`, `.github/workflows/cicd.yml` ens
 
 Image names are lowercased. Publishing uses the workflow's `GITHUB_TOKEN` with `packages: write`; no additional registry secret is required. Pull requests run checks without publishing. Each image uses the last commit affecting its component or shared build inputs; unchanged published images are reused. Deployment waits for the complete publish matrix. Existing packages must grant this repository Actions access if not already linked. After publishing succeeds, the workflow connects to EC2 as `ubuntu` and invokes the installed deployment script as root through non-interactive sudo. Configure the `ec2` environment and prepare the host as described in [continuous deployment](docs/deployment.md). Supporting Keycloak/observability images are not republished or redeployed.
 
-Docker Compose keeps the application services behind the `prod` profile. Supporting services can be started independently while developing infrastructure or application components.
+Docker Compose keeps the all application services for local development. All migrations and setup is done at once.
 
-Start the supporting services:
+Start the services:
 
 ```text
 docker compose up
-```
-
-Build and start the backend and supporting services. The image build packages the backend and frontend:
-
-```text
-docker compose --profile prod up
-```
-
-Run the complete application in the background:
-
-```text
-docker compose --profile prod up -d
-```
-
-Rebuild application images before starting:
-
-```text
-docker compose --profile prod up --build
-```
-
-Stop the running services while preserving persistent volumes:
-
-```text
-docker compose --profile prod down
 ```
 
 On first startup with an empty Keycloak database, the Compose setup imports the `matriz` realm, the `matriz-client` browser client, the `matriz-provisioning` service client, and one temporary-password user for each application role. The provisioning client uses `KEYCLOAK_PROVISIONING_CLIENT_SECRET`, which defaults only for local development; set this environment variable to a different value before starting Compose if required. The realm import does not update an existing realm; add missing clients through the Keycloak Admin Console.
@@ -82,9 +58,9 @@ The backend migration V4 also creates a demo team and local profiles linked to t
 
 | Role | Email | Initial password |
 | --- | --- | --- |
-| Administrator | `admin@matriz.local` | `MatrizAdmin123!` |
-| Project Manager | `manager@matriz.local` | `MatrizManager123!` |
-| Software Engineer | `engineer@matriz.local` | `MatrizEngineer123!` |
+| Administrator | `admin@matriz.local` | `123456` |
+| Project Manager | `manager@matriz.local` | `123456` |
+| Software Engineer | `engineer@matriz.local` | `123456` |
 
 These initial credentials are for local development only and must not be reused elsewhere.
 
